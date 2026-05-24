@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quotebook</title>
+    <link rel="stylesheet" href="static/style.css">
+  </head>
+  <body>
+    <header id="header">
+      <h1><a href="index.html">Quotebook</a></h1>
+      <nav id="nav-bar">
+        <a href="/login" class="nav-link">Login</a>
+        <a href="/signup" class="nav-link">Signup</a>
+      </nav>
+    </header>
+    <!-- Sign Up Form -->
+    <div class="main">
+      <form id="signup" method="POST" action="/signup">
+        <div class="form-group">
+          <label for="signup-name">Name</label>
+          <input id="signup-name" name="name" type="text" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label for="signup-email">Email</label>
+          <input id="signup-email" name="email" type="email" placeholder="johndoe@email.com">
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input id="signup-password" name="password" type="password" placeholder="Enter password">
+        </div>
+        <div class="form-group">
+          <label for="signup-confirm-password">Confirm Password</label>
+          <input id="signup-confirm-password" name="confirm-password" type="password" placeholder="Confirm password">
+        </div>
+        <button id="signup-button" type="submit">Sign Up</button>
+      </form>
+    </div>
+  </body>
+</html>

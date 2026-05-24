@@ -1,0 +1,75 @@
+body {
+    margin: 0;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: #FFF;
+    background-color: #333;
+    display: flex;
+    height: 75px;
+}
+
+h1 {
+    padding: 0 20px;
+    height: 100%;
+}
+
+nav {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 75px;
+    padding: 0 20px;
+    flex-grow: 1;
+}
+
+a {
+    list-style-type: none;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #FFF; 
+}
+
+input {
+    border-radius: 5px;
+    border-style: groove;
+    padding: 5px;
+}
+
+.main {
+    margin-top: 75px;
+}
+
+#signup, #login {
+    margin: auto;
+    padding: 20px 0;
+    justify-content: center;
+    width: 400px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border-width: 0;
+    color: white;
+    background-color: #3366ff;
+}
+button[type="submit"]:focus, button[type="submit"]:hover {
+    border-width: 0;
+    background-color: #1144dd;
+}
+
+button[type="submit"]:active {
+    background-color: #5588ff;
+}

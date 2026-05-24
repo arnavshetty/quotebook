@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quotebook</title>
+    <link rel="stylesheet" href="static/style.css">
+  </head>
+  <body>
+    <header id="header">
+      <h1><a href="index.html">Quotebook</a></h1>
+      <nav id="nav-bar">
+        <a href="/login" class="nav-link">Login</a>
+        <a href="/signup" class="nav-link">Signup</a>
+      </nav>
+    </header>
+    <div class="main">
+      <form id="add-quote" method="POST" action="/add-quote">
+        <div class="form-group">
+          <label for="quote">Quote</label>
+          <input id="quote" name="quote" type="text" placeholder="e.g. To be or not to be, that is the question.">
+        </div>
+        <div class="form-group">
+          <label for="speaker">Speaker</label>
+          <input id="speaker" name="speaker" type="text" placeholder="e.g. Hamlet">
+        </div>
+        <div class="form-group">
+          <label for="month">Month</label>
+          <select id="month" name="month">
+            <!-- Month Unknown to User -->
+            <option value="">Unknown</option> 
+            <!-- Month Known -->
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>    
+            <option value="April">April</option>  
+            <option value="May">May</option>  
+            <option value="June">June</option>  
+            <option value="July">July</option>  
+            <option value="August">August</option>  
+            <option value="September">September</option>  
+            <option value="October">October</option>  
+            <option value="November">November</option>  
+            <option value="December">December</option>  
+          </select>  
+        </div>
+        <div class="form-group">
+          <label for="day">Day (or Day Range if exact date is known)</label>
+          <input id="day" name="day" type="text">
+        </div>
+        <div class="form-group">
+          <label for="year">Year</label>
+          <input id="year" name="year" type="number" placeholder="YYYY or leave blank if unknown">
+        </div>
+        <div class=form-group>
+          
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
