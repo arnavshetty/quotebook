@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Quotebook</title>
+    <title>The Quote Library</title>
     <link rel="stylesheet" href="static/style.css">
   </head>
   <body>
     <!-- Header -->
     <header id="header">
-      <h1><a href="/">Quotebook</a></h1>
+      <h1><a href="/">The Quote Library</a></h1>
       <nav id="nav-bar">
         <a href="/logout" class="nav-link">Log Out</a>
       </nav>
@@ -16,31 +16,34 @@
     <div class="main">
       <form id="add-quote" method="POST" action="/add-quote">
         <!-- Quote, Speaker, and Context -->
-        
-          <div class="form-group quote-group">
-            <label for="quote">Quote</label>
-            <input id="quote" name="quote" type="text" placeholder="e.g. To be or not to be, that is the question.">
+        <div class=line-row>
+          <div class="flex-group">
+            <div class="form-group quote-group">
+              <label for="quote">Quote</label>
+              <input id="quote" name="quote[]" type="text" placeholder="e.g. To be or not to be, that is the question." required>
+            </div>
           </div>
+          <div class="flex-group">
+            <div class="form-group">
+              <label for="speaker">Speaker</label>
+              <input id="speaker" name="speaker[]" type="text" placeholder="e.g. Hamlet">
+            </div>
+            <div class="form-group context-group  ">
+              <label for="context">Context</label>
+              <input id="context" name="context[]" type="text" placeholder="e.g. monologing to the audience">
+            </div>
+            <div class="form-group">
+              <label for="context-position">Context Position</label>
+              <select id="context-position" name="context-position[]">
+                <option value="">N/A</option>
+                <option value="Before">Before</option>
+                <option value="After">After</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div class="flex-group">
-          <div class="form-group">
-            <label for="speaker">Speaker</label>
-            <input id="speaker" name="speaker" type="text" placeholder="e.g. Hamlet">
-          </div>
-          <div class="form-group context-group  ">
-            <label for="context">Context</label>
-            <input id="context" name="context" type="text" placeholder="e.g. monologing to the audience">
-          </div>
-          <div class="form-group">
-            <label for="context-position">Context Position</label>
-            <select id="context-position" name="context-position">
-              <option value="">N/A</option>
-              <option value="Before">Before</option>
-              <option value="After">After</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <button id="add-line-btn" type="button">Add Speaker Line</button>
-          </div>
+          <button id="add-line-btn" type="button">Add Speaker Line</button>
         </div>
         <!-- Date -->
         <div class="flex-group">
@@ -72,11 +75,46 @@
             <label for="year">Year</label>
             <input id="year" name="year" type="number" placeholder="YYYY">
           </div>
-          <div class="form-group">
+        </div>
+        <div class="flex-group">
             <button id="submit-quote-btn" type="submit">Add Quote</button>
-          </div>
         </div>
       </form>
+      <!-- Quote Display -->
+      <div class="quotes-display">
+        <h2>Your Quotebook</h2>
+        
+        {% for quote in quotes %}
+          <div class="quote-card">
+            
+            {% for line in quote.lines %}
+              <blockquote class="quote-line">
+                {% if line.context and line.position == 'Before' %}
+                <span class="context-text">[{{ line.context }}]</span>
+                {% endif %}
+                
+                "{{ line.text }}" — <strong>{{ line.author }}</strong>
+
+                {% if line.context and line.position == 'After' %}
+                <span class="context-text"> {{ line.context }}</span>
+                {% endif %}
+              </blockquote>
+      
+            {% endfor %}
+      
+            <div class="quote-date">
+              <small>
+                {% if quote.month %}{{ quote.month }}{% endif %}
+                {% if quote.day %}{{ quote.day }},{% endif %}
+                {% if quote.year %}{{ quote.year }}{% endif %}
+                {% if not quote.month and not quote.day and not quote.year %}Date Unknown{% endif %}
+              </small>
+            </div>
+            
+          </div>
+          {% endfor %}
+      </div>
     </div>
+    <script src="static/script.js"></script>
   </body>
 </html>

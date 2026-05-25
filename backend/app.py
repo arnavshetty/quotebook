@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # import custom database functions
-from database import add_user, get_user_by_email 
+from database import add_user, get_user_by_email, add_quote_entry, get_all_quotes
 
 # We tell Flask where to look for your frontend folders
 app = Flask(__name__, 
@@ -63,9 +63,34 @@ def homepage():
     # Check if the user has a valid login session
     if 'user_id' not in session:
         return redirect('/login')
-        
-    # If they ARE logged in, serve your main index.html webpage
-    return render_template('index.html')
+
+    # Get unformatted data of quotes
+    raw_quotes = get_all_quotes()
+
+    # Group speaker lines by quote blockID
+    grouped_quotes = {}
+    for row in raw_quotes:
+        block_id = row[0]
+
+        # If new blockID, set a new container
+        if block_id not in grouped_quotes:
+            grouped_quotes[block_id] = {
+                'month': row[1],
+                'day': row[2],
+                'year': row[3],
+                'lines': []
+            }
+
+        # Append the line details to the block's lines array
+        grouped_quotes[block_id]['lines'].append({
+            'text': row[4],
+            'author': row[5],
+            'context': row[6],
+            'position': row[7]
+        })
+
+    # Pass the dictionary to the HTML file
+    return render_template('index.html', quotes=list(grouped_quotes.values()))
 
 # Logout
 @app.route('/logout')
@@ -74,5 +99,37 @@ def logout():
     session.clear()
     return redirect('/login')
 
+# Add Quote
+@app.route('/add-quote', methods=['POST'])
+def add_quote():
+    # Security Check: User can't add anything if not logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    # Get user inputs
+    quotes_list = request.form.getlist('quote[]')
+    speakers_list = request.form.getlist('speaker[]')
+    contexts_list = request.form.getlist('context[]')
+    positions_list = request.form.getlist('context-position[]')
+    
+    month = request.form.get('month')
+    day = request.form.get('day')
+    year = request.form.get('year')
+
+    # Check inputs
+
+    # Save the quote with the userID from the session cookie
+    success = add_quote_entry(session['user_id'], month, day, year, quotes_list, speakers_list, contexts_list, positions_list)
+    
+    # Check for success and give feedback
+    # if success:
+    #     flash("Quote successfully added!", "success")
+    # else:
+    #     flash("Something went wrong saving your quote. Please try again.", "error")
+
+    # Redirect to the homepage
+    return redirect('/')
+
+### Run Main
 if __name__ == '__main__':
     app.run(debug=True)

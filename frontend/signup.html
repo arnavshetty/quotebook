@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Quotebook</title>
+    <title>The Quote Library</title>
     <link rel="stylesheet" href="static/style.css">
   </head>
   <body>
     <header id="header">
-      <h1><a href="index.html">Quotebook</a></h1>
+      <h1><a href="index.html">The Quote Library</a></h1>
       <nav id="nav-bar">
         <a href="/login" class="nav-link">Log In</a>
         <a href="/signup" class="nav-link">Signup</a>
@@ -17,19 +17,19 @@
       <form id="signup" method="POST" action="/signup">
         <div class="form-group">
           <label for="signup-name">Name</label>
-          <input id="signup-name" name="name" type="text" placeholder="John Doe">
+          <input id="signup-name" name="name" type="text" placeholder="John Doe" required>
         </div>
         <div class="form-group">
           <label for="signup-email">Email</label>
-          <input id="signup-email" name="email" type="email" placeholder="johndoe@email.com">
+          <input id="signup-email" name="email" type="email" placeholder="johndoe@email.com" required>
         </div>
         <div class="form-group">
           <label for="signup-password">Password</label>
-          <input id="signup-password" name="password" type="password" placeholder="Enter password">
+          <input id="signup-password" name="password" type="password" placeholder="Enter password" required>
         </div>
         <div class="form-group">
           <label for="signup-confirm-password">Confirm Password</label>
-          <input id="signup-confirm-password" name="confirm-password" type="password" placeholder="Confirm password">
+          <input id="signup-confirm-password" name="confirm-password" type="password" placeholder="Confirm password" required>
         </div>
         <button id="signup-btn" type="submit">Sign Up</button>
       </form>

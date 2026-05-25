@@ -67,9 +67,9 @@ def add_user(name, email, hashed_password):
     except sqlite3.IntegrityError:
         print("Email already exists.")
         return False
-        
+    
+    # Close the connection in all cases
     finally:
-        # Close the connection for all cases
         conn.close()
 
 def get_user_by_email(email):
@@ -92,6 +92,68 @@ def get_user_by_email(email):
     conn.close()
     
     return user_row
+
+def add_quote_entry(user_id, month, day, year, quotes, speakers, contexts, positions):
+    # Connect to the database
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    try:
+        # Insert the parent block container
+        cursor.execute('''
+            INSERT INTO quote_blocks (user_id, year, month, day_range)
+            VALUES (?, ?, ?, ?)
+        ''', (user_id, year, month, day))
+        
+        # Get the auto-generated ID of the quote_block we just created
+        new_block_id = cursor.lastrowid
+        
+        # Loop through all submitted rows sequentially
+        for index, (quote, speaker, context, position) in enumerate(zip(quotes, speakers, contexts, positions)):
+            # Skip empty rows
+            if not quote or not quote.strip():
+                continue
+            if not speaker or not speaker.strip():
+                speaker = "Anonymous"
+                
+            line_order = index + 1
+            
+            cursor.execute('''
+                INSERT INTO utterances (quote_block_id, quote, author, context, context_position, line_order)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (new_block_id, quote, speaker, context, position, line_order))
+
+        # Close the connection
+        conn.commit()
+        return True
+
+    # Error Handling
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return False
+
+    # Close the connection in all cases
+    finally:
+        conn.close()
+
+def get_all_quotes():
+    # Connect to the database
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    # Select fields from both tables, linking them where the IDs match
+    # Sort quotes by block ID and then by line_order
+    cursor.execute('''
+        SELECT qb.id AS block_id, qb.month, qb.day_range, qb.year,
+            ut.quote, ut.author, ut.context, ut.context_position, ut.line_order
+        FROM quote_blocks qb
+        INNER JOIN utterances ut ON qb.id = ut.quote_block_id
+        ORDER BY qb.id DESC, ut.line_order ASC
+    ''')
+    
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
 
 # Database initializes upon running this file
 if __name__ == '__main__':

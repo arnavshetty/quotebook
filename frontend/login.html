@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Quotebook</title>
+    <title>The Quote Library</title>
     <link rel="stylesheet" href="static/style.css">
   </head>
   <body>
     <header id="header">
-      <h1><a href="index.html">Quotebook</a></h1>
+      <h1><a href="index.html">The Quote Library</a></h1>
       <nav id="nav-bar">
         <a href="/login" class="nav-link">Log In</a>
         <a href="/signup" class="nav-link">Signup</a>
@@ -17,11 +17,11 @@
       <form id="login" method="POST" action="/login">
         <div class="form-group">
           <label for="login-email">Email</label>
-          <input id="login-email" name="email" type="email" placeholder="Enter your email...">
+          <input id="login-email" name="email" type="email" placeholder="Enter your email..." required>
         </div>
         <div class="form-group">
           <label for="login-password">Password</label>
-          <input id="login-password" name="password" type="password" placeholder="Enter your password...">
+          <input id="login-password" name="password" type="password" placeholder="Enter your password..." required>
         </div>
         <button id="login-btn" type="submit">Log In</button>
       </form>
