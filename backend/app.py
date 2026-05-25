@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # import custom database functions
-from database import add_user, get_user_by_email, add_quote_entry, get_all_quotes
+from database import add_user, get_user_by_email, add_quote_entry, get_all_quotes, delete_quote_block
 
 # We tell Flask where to look for your frontend folders
 app = Flask(__name__, 
@@ -75,6 +75,7 @@ def homepage():
         # If new blockID, set a new container
         if block_id not in grouped_quotes:
             grouped_quotes[block_id] = {
+                'id': block_id,
                 'month': row[1],
                 'day': row[2],
                 'year': row[3],
@@ -128,6 +129,18 @@ def add_quote():
     #     flash("Something went wrong saving your quote. Please try again.", "error")
 
     # Redirect to the homepage
+    return redirect('/')
+
+# Delete Quote
+@app.route('/delete-quote/<int:block_id>', methods=['POST'])
+def delete_quote(block_id):
+    if 'user_id' not in session:
+        return redirect('/login')
+        
+    # Trigger our deletion transaction
+    delete_quote_block(block_id)
+    
+    # Send them right back to the updated timeline wall
     return redirect('/')
 
 ### Run Main

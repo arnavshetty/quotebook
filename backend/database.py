@@ -155,6 +155,31 @@ def get_all_quotes():
     conn.close()
     return rows
 
+def delete_quote_block(block_id):
+    # Connect to the database
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    
+    try:
+        # Remove all the child utterances linked to the quote block
+        cursor.execute('DELETE FROM utterances WHERE quote_block_id = ?', (block_id,))
+        
+        # Remove the parent quote block container
+        cursor.execute('DELETE FROM quote_blocks WHERE id = ?', (block_id,))
+        
+        # Close the connnection
+        conn.commit()
+        return True
+    
+    # Error Handling
+    except sqlite3.Error as e:
+        print(f"Database deletion error: {e}")
+        return False
+
+    # Close the connection in all cases
+    finally:
+        conn.close()
+
 # Database initializes upon running this file
 if __name__ == '__main__':
     init_db()

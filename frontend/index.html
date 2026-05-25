@@ -99,7 +99,7 @@
                 <span class="context-text"> {{ line.context }}</span>
                 {% endif %}
               </blockquote>
-      
+
             {% endfor %}
       
             <div class="quote-date">
@@ -110,6 +110,12 @@
                 {% if not quote.month and not quote.day and not quote.year %}Date Unknown{% endif %}
               </small>
             </div>
+
+            <form action="/delete-quote/{{ quote.id }}" method="POST" class="delete-form">
+              <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this quote?');">
+                &times;
+              </button>
+            </form>
             
           </div>
           {% endfor %}

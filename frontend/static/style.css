@@ -38,13 +38,15 @@ input, select {
 button {
     width: 100%;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 8px;
     border-width: 0;
     color: white;
     background-color: #3366ff;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-button:focus, button:hover {
+button:hover {
     background-color: #1144dd;
 }
 
@@ -111,11 +113,51 @@ button:active {
 }
 
 .quote-card {
+    position: relative;
     background: #fff;
     border-left: 4px solid #3b82f6;
     padding: 15px 20px;
     margin-bottom: 20px;
-    border-radius: 8px;
+    border-radius: 0 10px 10px 0;
+    box-shadow: 3px 3px 3px rgba(0,0,0,0.05);
+}
+
+.quote-date {
+    position: absolute;
+    bottom: 12px;
+    right: 15px;
+    color: #64748b;
+    font-style: italic;
+    text-align: right;
+}
+
+.delete-form {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.25rem;
+    font-weight: bold;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.delete-btn:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.delete-btn:focus {
+    outline-color: #ef4444;
 }
 
 #signup, #login {
@@ -149,4 +191,8 @@ button:active {
     height: 100%;
     background-color: #eee;
     color: #000;
+}
+
+#add-line-btn:hover {
+    background-color: #ccc;
 }
