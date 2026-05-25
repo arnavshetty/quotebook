@@ -5,53 +5,76 @@
     <link rel="stylesheet" href="static/style.css">
   </head>
   <body>
+    <!-- Header -->
     <header id="header">
-      <h1><a href="index.html">Quotebook</a></h1>
+      <h1><a href="/">Quotebook</a></h1>
       <nav id="nav-bar">
-        <a href="/login" class="nav-link">Login</a>
-        <a href="/signup" class="nav-link">Signup</a>
+        <a href="/logout" class="nav-link">Log Out</a>
       </nav>
     </header>
+    <!-- Main Body -->
     <div class="main">
       <form id="add-quote" method="POST" action="/add-quote">
-        <div class="form-group">
-          <label for="quote">Quote</label>
-          <input id="quote" name="quote" type="text" placeholder="e.g. To be or not to be, that is the question.">
+        <!-- Quote, Speaker, and Context -->
+        
+          <div class="form-group quote-group">
+            <label for="quote">Quote</label>
+            <input id="quote" name="quote" type="text" placeholder="e.g. To be or not to be, that is the question.">
+          </div>
+        <div class="flex-group">
+          <div class="form-group">
+            <label for="speaker">Speaker</label>
+            <input id="speaker" name="speaker" type="text" placeholder="e.g. Hamlet">
+          </div>
+          <div class="form-group context-group  ">
+            <label for="context">Context</label>
+            <input id="context" name="context" type="text" placeholder="e.g. monologing to the audience">
+          </div>
+          <div class="form-group">
+            <label for="context-position">Context Position</label>
+            <select id="context-position" name="context-position">
+              <option value="">N/A</option>
+              <option value="Before">Before</option>
+              <option value="After">After</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <button id="add-line-btn" type="button">Add Speaker Line</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="speaker">Speaker</label>
-          <input id="speaker" name="speaker" type="text" placeholder="e.g. Hamlet">
-        </div>
-        <div class="form-group">
-          <label for="month">Month</label>
-          <select id="month" name="month">
-            <!-- Month Unknown to User -->
-            <option value="">Unknown</option> 
-            <!-- Month Known -->
-            <option value="January">January</option>
-            <option value="February">February</option>
-            <option value="March">March</option>    
-            <option value="April">April</option>  
-            <option value="May">May</option>  
-            <option value="June">June</option>  
-            <option value="July">July</option>  
-            <option value="August">August</option>  
-            <option value="September">September</option>  
-            <option value="October">October</option>  
-            <option value="November">November</option>  
-            <option value="December">December</option>  
-          </select>  
-        </div>
-        <div class="form-group">
-          <label for="day">Day (or Day Range if exact date is known)</label>
-          <input id="day" name="day" type="text">
-        </div>
-        <div class="form-group">
-          <label for="year">Year</label>
-          <input id="year" name="year" type="number" placeholder="YYYY or leave blank if unknown">
-        </div>
-        <div class=form-group>
-          
+        <!-- Date -->
+        <div class="flex-group">
+          <div class="form-group">
+            <label for="month">Month</label>
+            <select id="month" name="month">
+              <!-- Month Unknown to User -->
+              <option value="">N/A</option> 
+              <!-- Month Known -->
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>    
+              <option value="April">April</option>  
+              <option value="May">May</option>  
+              <option value="June">June</option>  
+              <option value="July">July</option>  
+              <option value="August">August</option>  
+              <option value="September">September</option>  
+              <option value="October">October</option>  
+              <option value="November">November</option>  
+              <option value="December">December</option>  
+            </select>  
+          </div>
+          <div class="form-group">
+            <label for="day">Day(s)</label>
+            <input id="day" name="day" type="text" placeholder="DD or DD-DD">
+          </div>
+          <div class="form-group">
+            <label for="year">Year</label>
+            <input id="year" name="year" type="number" placeholder="YYYY">
+          </div>
+          <div class="form-group">
+            <button id="submit-quote-btn" type="submit">Add Quote</button>
+          </div>
         </div>
       </form>
     </div>

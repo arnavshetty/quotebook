@@ -13,9 +13,11 @@ header {
     height: 75px;
 }
 
-h1 {
+h1 a {
     padding: 0 20px;
     height: 100%;
+    text-decoration: none;
+    color: #FFF; 
 }
 
 nav {
@@ -27,21 +29,64 @@ nav {
     flex-grow: 1;
 }
 
-a {
-    list-style-type: none;
-    padding: 10px 20px;
+input, select {
+    border: 2px groove #333;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border-width: 0;
+    color: white;
+    background-color: #3366ff;
+}
+
+button:focus, button:hover {
+    background-color: #1144dd;
+}
+
+button:active {
+    background-color: #5588ff;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 20px;
     text-decoration: none;
     color: #FFF; 
 }
 
-input {
-    border-radius: 5px;
-    border-style: groove;
-    padding: 5px;
+.nav-link:hover, .nav-link:focus {
+    background-color: #555; 
+}
+
+.nav-link:active {
+    background-color: #111; 
 }
 
 .main {
     margin-top: 75px;
+}
+
+.flex-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 25px;
+}
+
+.context-group {
+    flex-grow: 2;
 }
 
 #signup, #login {
@@ -51,25 +96,13 @@ input {
     width: 400px;
 }
 
-.form-group {
-    margin-bottom: 25px;
-    display: flex;
-    flex-direction: column;
+#add-quote {
+    margin: auto;
+    padding: 20px 0;
+    justify-content: center;
+    width: 80%;
 }
 
-button[type="submit"] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border-width: 0;
-    color: white;
-    background-color: #3366ff;
-}
-button[type="submit"]:focus, button[type="submit"]:hover {
-    border-width: 0;
-    background-color: #1144dd;
-}
-
-button[type="submit"]:active {
-    background-color: #5588ff;
+#submit-quote-btn, #add-line-btn {
+    height: 100%;
 }
