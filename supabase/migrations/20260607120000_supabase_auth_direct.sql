@@ -92,17 +92,45 @@ ON profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id);
 
+CREATE OR REPLACE FUNCTION public.owned_quotebook_ids()
+RETURNS SETOF INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.quotebooks WHERE created_by = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION public.accessible_quotebook_ids()
+RETURNS SETOF INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.quotebooks WHERE created_by = auth.uid()
+    UNION
+    SELECT quotebook_id FROM public.quotebook_permissions WHERE user_id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION public.writable_quotebook_ids()
+RETURNS SETOF INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT id FROM public.quotebooks WHERE created_by = auth.uid()
+    UNION
+    SELECT quotebook_id FROM public.quotebook_permissions
+    WHERE user_id = auth.uid() AND role IN ('contributor', 'admin');
+$$;
+
 CREATE POLICY "Users can view accessible quotebooks"
 ON quotebooks FOR SELECT
 TO authenticated
-USING (
-    created_by = auth.uid()
-    OR EXISTS (
-        SELECT 1 FROM quotebook_permissions
-        WHERE quotebook_permissions.quotebook_id = quotebooks.id
-        AND quotebook_permissions.user_id = auth.uid()
-    )
-);
+USING (id IN (SELECT public.accessible_quotebook_ids()));
 
 CREATE POLICY "Users can create their own quotebooks"
 ON quotebooks FOR INSERT
@@ -123,44 +151,21 @@ CREATE POLICY "Users can view permissions for accessible quotebooks"
 ON quotebook_permissions FOR SELECT
 TO authenticated
 USING (
-    EXISTS (
-        SELECT 1 FROM quotebooks
-        WHERE quotebooks.id = quotebook_permissions.quotebook_id
-        AND (
-            quotebooks.created_by = auth.uid()
-            OR quotebook_permissions.user_id = auth.uid()
-        )
-    )
+    user_id = auth.uid()
+    OR quotebook_id IN (SELECT public.owned_quotebook_ids())
 );
 
 CREATE POLICY "Users can view quote blocks in accessible quotebooks"
 ON quote_blocks FOR SELECT
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1 FROM quotebooks q
-        LEFT JOIN quotebook_permissions p
-            ON q.id = p.quotebook_id AND p.user_id = auth.uid()
-        WHERE q.id = quote_blocks.quotebook_id
-        AND (q.created_by = auth.uid() OR p.user_id = auth.uid())
-    )
-);
+USING (quotebook_id IN (SELECT public.accessible_quotebook_ids()));
 
 CREATE POLICY "Contributors can add quote blocks"
 ON quote_blocks FOR INSERT
 TO authenticated
 WITH CHECK (
     user_id = auth.uid()
-    AND EXISTS (
-        SELECT 1 FROM quotebooks q
-        LEFT JOIN quotebook_permissions p
-            ON q.id = p.quotebook_id AND p.user_id = auth.uid()
-        WHERE q.id = quote_blocks.quotebook_id
-        AND (
-            q.created_by = auth.uid()
-            OR (p.user_id = auth.uid() AND p.role IN ('contributor', 'admin'))
-        )
-    )
+    AND quotebook_id IN (SELECT public.writable_quotebook_ids())
 );
 
 CREATE POLICY "Creators can delete their quote blocks"
@@ -174,11 +179,20 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM quote_blocks b
-        JOIN quotebooks q ON q.id = b.quotebook_id
-        LEFT JOIN quotebook_permissions p
-            ON q.id = p.quotebook_id AND p.user_id = auth.uid()
         WHERE b.id = utterances.quote_block_id
-        AND (q.created_by = auth.uid() OR p.user_id = auth.uid())
+          AND b.quotebook_id IN (SELECT public.accessible_quotebook_ids())
+    )
+);
+
+CREATE POLICY "Contributors can insert utterances"
+ON utterances FOR INSERT
+TO authenticated
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM quote_blocks b
+        WHERE b.id = utterances.quote_block_id
+          AND b.user_id = auth.uid()
+          AND b.quotebook_id IN (SELECT public.writable_quotebook_ids())
     )
 );
 
