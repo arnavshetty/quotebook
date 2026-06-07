@@ -1,15 +1,21 @@
-import sqlite3
+import psycopg2
+
+DB_URI = "***REMOVED***"
+
+def get_db_connection():
+    """Establishes a secure network connection to your Supabase cloud database."""
+postgresql://REDACTED
 
 # Coded with help from Gemini
 def init_db():
     # Connect to/create the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Create the USERS table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             hashed_password TEXT NOT NULL
@@ -19,7 +25,7 @@ def init_db():
     # Create the QUOTE_BLOCKS table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS quote_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             year INTEGER,
             month TEXT,
@@ -31,7 +37,7 @@ def init_db():
     # Create the UTTERANCES TABLE
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS utterances (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             quote_block_id INTEGER NOT NULL,
             quote TEXT NOT NULL,
             author TEXT NOT NULL,
@@ -48,24 +54,27 @@ def init_db():
 
 def add_user(name, email, hashed_password):
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Try to insert the user data
     try:
-        # Use ? placeholders for security to prevent "SQL Injection"
+        # Use %s placeholders for security to prevent "SQL Injection"
         cursor.execute('''
             INSERT INTO users (name, email, hashed_password)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
         ''', (name, email, hashed_password))
         
         # Save the changes to the file
         conn.commit()
         return True
     
-    # Exception: new user insertion fails because email already exists
-    except sqlite3.IntegrityError:
-        print("Email already exists.")
+    except psycopg2.Error as e:
+        # '23505' is the universal SQL standard error code for a Unique Violation
+        if getattr(e, 'pgcode', None) == '23505':
+            print("Email already exists.")
+        else:
+            print(f"Database error: {e}")
         return False
     
     # Close the connection in all cases
@@ -74,18 +83,17 @@ def add_user(name, email, hashed_password):
 
 def get_user_by_email(email):
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # We select the whole row where the email matches our parameter
     cursor.execute('''
         SELECT id, name, email, hashed_password 
         FROM users 
-        WHERE email = ?
+        WHERE email = %s
     ''', (email,))
 
     # Grab the first matching row found (should only be one match anyway)
-    #user_row will either be a tuple (id, name, email, hash_password) or None
     user_row = cursor.fetchone()
     
     # Close the connection
@@ -95,18 +103,21 @@ def get_user_by_email(email):
 
 def add_quote_entry(user_id, month, day, year, quotes, speakers, contexts, positions):
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
+        # Convert empty or blank year strings safely to integers for PostgreSQL
+        formatted_year = int(year) if year and str(year).strip().isdigit() else None
+        
         # Insert the parent block container
         cursor.execute('''
             INSERT INTO quote_blocks (user_id, year, month, day_range)
-            VALUES (?, ?, ?, ?)
-        ''', (user_id, year, month, day))
+            VALUES (%s, %s, %s, %s) RETURNING id
+        ''', (user_id, formatted_year, month, day))
         
-        # Get the auto-generated ID of the quote_block we just created
-        new_block_id = cursor.lastrowid
+        # Get the returned ID of the quote_block we just created
+        new_block_id = cursor.fetchone()[0]
         
         # Loop through all submitted rows sequentially
         for index, (quote, speaker, context, position) in enumerate(zip(quotes, speakers, contexts, positions)):
@@ -120,7 +131,7 @@ def add_quote_entry(user_id, month, day, year, quotes, speakers, contexts, posit
             
             cursor.execute('''
                 INSERT INTO utterances (quote_block_id, quote, author, context, context_position, line_order)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
             ''', (new_block_id, quote, speaker, context, position, line_order))
 
         # Close the connection
@@ -128,7 +139,7 @@ def add_quote_entry(user_id, month, day, year, quotes, speakers, contexts, posit
         return True
 
     # Error Handling
-    except sqlite3.Error as e:
+    except psycopg2.Error as e:
         print(f"Database error: {e}")
         return False
 
@@ -138,7 +149,7 @@ def add_quote_entry(user_id, month, day, year, quotes, speakers, contexts, posit
 
 def get_all_quotes():
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # Select fields from both tables, linking them where the IDs match
@@ -157,22 +168,22 @@ def get_all_quotes():
 
 def delete_quote_block(block_id):
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
         # Remove all the child utterances linked to the quote block
-        cursor.execute('DELETE FROM utterances WHERE quote_block_id = ?', (block_id,))
+        cursor.execute('DELETE FROM utterances WHERE quote_block_id = %s', (block_id,))
         
         # Remove the parent quote block container
-        cursor.execute('DELETE FROM quote_blocks WHERE id = ?', (block_id,))
+        cursor.execute('DELETE FROM quote_blocks WHERE id = %s', (block_id,))
         
         # Close the connnection
         conn.commit()
         return True
     
     # Error Handling
-    except sqlite3.Error as e:
+    except psycopg2.Error as e:
         print(f"Database deletion error: {e}")
         return False
 

@@ -123,10 +123,10 @@ def add_quote():
     success = add_quote_entry(session['user_id'], month, day, year, quotes_list, speakers_list, contexts_list, positions_list)
     
     # Check for success and give feedback
-    # if success:
-    #     flash("Quote successfully added!", "success")
-    # else:
-    #     flash("Something went wrong saving your quote. Please try again.", "error")
+    #if success:
+    #    flash("Quote successfully added!", "success")
+    #else:
+    #    flash("Something went wrong saving your quote. Please try again.", "error")
 
     # Redirect to the homepage
     return redirect('/')
@@ -145,4 +145,7 @@ def delete_quote(block_id):
 
 ### Run Main
 if __name__ == '__main__':
-    app.run(debug=True)
+    import os
+    # Read the port assigned by Render, default to 5000 if running locally
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
