@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # import custom database functions
-from database import add_user, get_user_by_email, add_quote_entry, get_all_quotes, delete_quote_block
+from .database import add_user, get_user_by_email, add_quote_entry, get_all_quotes, delete_quote_block
 
 # We tell Flask where to look for your frontend folders
 app = Flask(__name__, 
