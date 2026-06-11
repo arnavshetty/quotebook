@@ -73,6 +73,30 @@ export const api = {
     return { quotebooks: data || [] }
   },
 
+  createQuotebook: async ({ title, description }) => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) throw new Error('You must be logged in to create a quotebook.')
+
+    const { data, error } = await supabase
+      .from('quotebooks')
+      .insert({
+        title: title.trim(),
+        description: description?.trim() || null,
+        created_by: user.id,
+      })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    return { quotebook: data }
+  },
+
+  deleteQuotebook: async (quotebookId) => {
+    const { error } = await supabase.from('quotebooks').delete().eq('id', quotebookId)
+    if (error) throw new Error(error.message)
+    return { message: 'Quotebook deleted.' }
+  },
+
   getQuotebook: async (quotebookId) => {
     const { data, error } = await supabase
       .rpc('get_quotebook_for_user', { p_quotebook_id: quotebookId })

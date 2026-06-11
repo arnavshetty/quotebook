@@ -197,7 +197,7 @@ WITH CHECK (
 );
 
 -- ==========================================================
--- NEW USER: profile + default quotebook
+-- NEW USER: profile only (quotebooks created from the app)
 -- ==========================================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -216,13 +216,6 @@ BEGIN
 
     INSERT INTO public.profiles (id, username)
     VALUES (NEW.id, chosen_username);
-
-    INSERT INTO public.quotebooks (title, description, created_by)
-    VALUES (
-        'My First Quotebook',
-        'My personal collection of favorite quotes.',
-        NEW.id
-    );
 
     RETURN NEW;
 END;

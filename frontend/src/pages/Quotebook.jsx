@@ -101,6 +101,9 @@ export default function Quotebook({ user }) {
             </select>
             <button type="submit">Share</button>
           </form>
+          <p className="share-hint">
+            Enter the email they used to sign up. The quotebook appears on their dashboard — no invite email is sent.
+          </p>
         </section>
       )}
 
