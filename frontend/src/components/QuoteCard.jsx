@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Check, Copy, Pencil, X } from 'lucide-react'
 import { formatQuoteForCopy } from '../lib/formatQuote'
+import { formatQuoteDate } from '../lib/quoteSort'
 import { getLineSpeakerStyle } from '../lib/speakerColors'
 import QuoteForm from './QuoteForm'
 
 export default function QuoteCard({
   quote,
   speakerColorMap,
-  canEdit,
-  canDelete,
+  canModerate,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
@@ -17,11 +17,6 @@ export default function QuoteCard({
   submitting,
 }) {
   const [copied, setCopied] = useState(false)
-
-  const formatDate = () => {
-    const parts = [quote.month, quote.day_range, quote.year].filter(Boolean)
-    return parts.length ? parts.join(' ') : 'Date unknown'
-  }
 
   const initialValues = {
     month: quote.month || '',
@@ -61,7 +56,7 @@ export default function QuoteCard({
     <article className="quote-card">
       <div className="quote-card-header">
         <div className="quote-card-meta">
-          <span className="quote-date">{formatDate()}</span>
+          <span className="quote-date">{formatQuoteDate(quote) || 'Date unknown'}</span>
           {quote.creator_name && (
             <span className="quote-creator">{quote.creator_name}</span>
           )}
@@ -79,25 +74,25 @@ export default function QuoteCard({
               <Copy size={14} strokeWidth={2} aria-hidden="true" />
             )}
           </button>
-          {canEdit && (
-            <button
-              type="button"
-              className="icon-action-btn"
-              onClick={onStartEdit}
-              aria-label="Edit quote"
-            >
-              <Pencil size={14} strokeWidth={2} aria-hidden="true" />
-            </button>
-          )}
-          {canDelete && (
-            <button
-              type="button"
-              className="icon-action-btn icon-action-btn--discard"
-              onClick={() => onDelete(quote.id)}
-              aria-label="Delete quote"
-            >
-              <X size={14} strokeWidth={2} aria-hidden="true" />
-            </button>
+          {canModerate && (
+            <>
+              <button
+                type="button"
+                className="icon-action-btn"
+                onClick={onStartEdit}
+                aria-label="Edit quote"
+              >
+                <Pencil size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="icon-action-btn icon-action-btn--discard"
+                onClick={() => onDelete(quote.id)}
+                aria-label="Delete quote"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </>
           )}
         </div>
       </div>

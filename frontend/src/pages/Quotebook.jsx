@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, List, Plus, X } from 'lucide-react'
+import { BookOpen, ChevronDown, Download, List, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
@@ -15,7 +15,20 @@ import {
   isQuotebookOwner,
 } from '../lib/quotePermissions'
 import { filterAndSortQuotes, getSpeakerQuoteCounts, getSpeakersFromQuotes } from '../lib/quoteSort'
+import { findExactDuplicate } from '../lib/duplicateQuote'
+import { downloadQuotebookExport } from '../lib/exportQuotebook'
 import { buildSpeakerColorMap } from '../lib/speakerColors'
+
+const SEARCH_PLACEHOLDERS = {
+  quote: 'Search quote text…',
+  context: 'Search context…',
+  date: 'e.g. June 2024',
+  'added-by': 'Search who added it…',
+}
+
+function pluralize(count, word) {
+  return `${count} ${word}${count === 1 ? '' : 's'}`
+}
 
 export default function Quotebook({ user }) {
   const { id } = useParams()
@@ -40,12 +53,7 @@ export default function Quotebook({ user }) {
   const [speakerRenameMessage, setSpeakerRenameMessage] = useState('')
   const [addQuoteOpen, setAddQuoteOpen] = useState(false)
 
-  const searchPlaceholder = {
-    quote: 'Search quote text…',
-    context: 'Search context…',
-    date: 'e.g. June 2024',
-    'added-by': 'Search who added it…',
-  }[searchField]
+  const searchPlaceholder = SEARCH_PLACEHOLDERS[searchField]
 
   const loadQuotes = () =>
     api.getQuotes(quotebookId)
@@ -89,6 +97,13 @@ export default function Quotebook({ user }) {
   const isFiltered = Boolean(speakerFilter || searchQuery.trim())
 
   const handleAddQuote = async (payload) => {
+    const duplicate = findExactDuplicate(quotes, payload)
+    if (duplicate) {
+      const message = 'This exact quote is already in the book (same text, speakers, context, and date).'
+      setError(message)
+      throw new Error(message)
+    }
+
     setAddSubmitting(true)
     setError('')
     try {
@@ -101,6 +116,11 @@ export default function Quotebook({ user }) {
     } finally {
       setAddSubmitting(false)
     }
+  }
+
+  const handleExport = (format) => {
+    if (!quotebook || quotes.length === 0) return
+    downloadQuotebookExport(quotes, quotebook, format, bookSort)
   }
 
   const handleDelete = async (blockId) => {
@@ -150,8 +170,7 @@ export default function Quotebook({ user }) {
     setSpeakerRenameMessage('')
     try {
       const { updatedCount } = await api.renameSpeaker(quotebookId, oldName, newName)
-      const data = await api.getQuotes(quotebookId)
-      setQuotes(data.quotes)
+      await loadQuotes()
       if (speakerFilter === oldName) {
         setSpeakerFilter(newName)
       }
@@ -179,33 +198,20 @@ export default function Quotebook({ user }) {
   const showSidebar = speakerLeaderboard.length > 0 || showCollaborators || canLeave
 
   return (
-    <div className="quotebook-page">
+    <div className={`quotebook-page${viewMode === 'book' ? ' quotebook-page--read' : ''}`}>
       <Link to="/" className="back-link">← All quotebooks</Link>
 
-      <div className={`quotebook-chrome${viewMode === 'book' ? ' quotebook-chrome--book' : ''}`}>
+      <div className="quotebook-chrome">
         <div className="quotebook-chrome-main">
           <div className="quotebook-chrome-title-row">
-            {viewMode === 'edit' ? (
-              <QuotebookHeader
-                quotebookId={quotebookId}
-                quotebook={quotebook}
-                canEdit={isOwner}
-                onUpdate={(updated) =>
-                  setQuotebook((prev) => ({ ...prev, ...updated, user_role: prev.user_role }))
-                }
-              />
-            ) : (
-              <div className="quotebook-chrome-read-heading">
-                <h2 className="quotebook-chrome-read-title">
-                  {quotebook?.title || `Quotebook #${quotebookId}`}
-                </h2>
-                {quotes.length > 0 && (
-                  <p className="quotebook-chrome-read-meta">
-                    {quotes.length} quote{quotes.length === 1 ? '' : 's'}
-                  </p>
-                )}
-              </div>
-            )}
+            <QuotebookHeader
+              quotebookId={quotebookId}
+              quotebook={quotebook}
+              canEdit={isOwner && viewMode === 'edit'}
+              onUpdate={(updated) =>
+                setQuotebook((prev) => ({ ...prev, ...updated, user_role: prev.user_role }))
+              }
+            />
             {quotebook?.user_role && quotebook.user_role !== 'owner' && (
               <span className={`badge badge--${quotebook.user_role} quotebook-chrome-role`}>
                 {quotebook.user_role}
@@ -216,28 +222,50 @@ export default function Quotebook({ user }) {
 
         <div className="quotebook-chrome-actions">
           {viewMode === 'book' && (
-            <div className="quotebook-chrome-sort">
-              <span className="quotebook-chrome-sort-label">Sort by</span>
-              <div className="book-sort-toggle" role="group" aria-label="Sort pages by">
-                <button
-                  type="button"
-                  className={bookSort === 'date' ? 'is-active' : ''}
-                  onClick={() => setBookSort('date')}
-                >
-                  Date
-                </button>
-                <button
-                  type="button"
-                  className={bookSort === 'speaker' ? 'is-active' : ''}
-                  onClick={() => setBookSort('speaker')}
-                >
-                  Speaker
-                </button>
+            <>
+              <div className="quotebook-chrome-sort">
+                <span className="segmented-label">Sort by</span>
+                <div className="segmented-toggle" role="group" aria-label="Sort pages by">
+                  <button
+                    type="button"
+                    className={bookSort === 'date' ? 'is-active' : ''}
+                    onClick={() => setBookSort('date')}
+                  >
+                    Date
+                  </button>
+                  <button
+                    type="button"
+                    className={bookSort === 'speaker' ? 'is-active' : ''}
+                    onClick={() => setBookSort('speaker')}
+                  >
+                    Speaker
+                  </button>
+                </div>
               </div>
-            </div>
+
+              {quotes.length > 0 && (
+                <div className="quotebook-chrome-export">
+                  <span className="segmented-label">Export</span>
+                  <div className="segmented-toggle" role="group" aria-label="Export quotebook">
+                    <button type="button" onClick={() => handleExport('text')}>
+                      <Download size={14} strokeWidth={2} aria-hidden="true" />
+                      Text
+                    </button>
+                    <button type="button" onClick={() => handleExport('markdown')}>
+                      <Download size={14} strokeWidth={2} aria-hidden="true" />
+                      Markdown
+                    </button>
+                    <button type="button" onClick={() => handleExport('json')}>
+                      <Download size={14} strokeWidth={2} aria-hidden="true" />
+                      JSON
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="quotebook-view-toggle" role="group" aria-label="View mode">
+          <div className="segmented-toggle" role="group" aria-label="View mode">
             <button
               type="button"
               className={viewMode === 'edit' ? 'is-active' : ''}
@@ -258,16 +286,12 @@ export default function Quotebook({ user }) {
         </div>
       </div>
 
+      {error && <p className="error quotebook-page-error">{error}</p>}
+
       <div
-        className={[
-          'quotebook-layout',
-          viewMode === 'book' ? 'quotebook-layout--read' : '',
-          showSidebar ? 'quotebook-layout--has-sidebar' : '',
-        ].filter(Boolean).join(' ')}
+        className={`quotebook-layout${viewMode === 'book' ? ' quotebook-layout--read' : ''}${showSidebar ? ' quotebook-layout--has-sidebar' : ''}`}
       >
         <div className="quotebook-main">
-          {error && <p className="error">{error}</p>}
-
           {viewMode === 'book' ? (
             <QuotebookBookView
               quotes={quotes}
@@ -305,78 +329,93 @@ export default function Quotebook({ user }) {
 
               <section className="quotes-display">
             <div className="quotes-display-header">
-              <h3>
-                {quotes.length === 0
-                  ? 'No quotes yet'
-                  : isFiltered
-                    ? `${displayedQuotes.length} of ${quotes.length} quote${quotes.length === 1 ? '' : 's'}`
-                    : `${quotes.length} quote${quotes.length === 1 ? '' : 's'}`}
-              </h3>
-
-              {quotes.length > 0 && (
-                <div className="quote-toolbar">
-                  <div className="toolbar-field toolbar-search-field">
-                    <span className="toolbar-field-label">Search</span>
-                    <div className="search-bar">
-                      <select
-                        className="search-bar-field"
-                        value={searchField}
-                        onChange={(e) => setSearchField(e.target.value)}
-                        aria-label="Search in"
-                      >
-                        <option value="quote">Quote</option>
-                        <option value="context">Context</option>
-                        <option value="date">Date</option>
-                        <option value="added-by">Added by</option>
-                      </select>
-                      <div className="search-bar-input-wrap">
-                        <input
-                          type="text"
-                          className="search-bar-input"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder={searchPlaceholder}
-                          aria-label="Search quotes"
-                        />
-                        {searchQuery && (
-                          <button
-                            type="button"
-                            className="icon-action-btn icon-action-btn--discard search-bar-clear"
-                            onClick={() => setSearchQuery('')}
-                            aria-label="Clear search"
-                          >
-                            <X size={14} strokeWidth={2} aria-hidden="true" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="toolbar-selects">
-                    <label className="toolbar-field">
-                      <span className="toolbar-field-label">Sort</span>
-                      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                        <option value="date-desc">Newest</option>
-                        <option value="date-asc">Oldest</option>
-                        <option value="speaker-asc">Speaker A–Z</option>
-                        <option value="speaker-desc">Speaker Z–A</option>
-                      </select>
-                    </label>
-                    <label className="toolbar-field">
-                      <span className="toolbar-field-label">Speaker</span>
-                      <select
-                        value={speakerFilter}
-                        onChange={(e) => setSpeakerFilter(e.target.value)}
-                      >
-                        <option value="">All</option>
-                        {speakers.map((speaker) => (
-                          <option key={speaker} value={speaker}>{speaker}</option>
-                        ))}
-                      </select>
-                    </label>
+              <div className="quote-toolbar">
+                <div
+                  className="quotes-display-count toolbar-field"
+                  aria-label={
+                    quotes.length === 0
+                      ? 'No quotes yet'
+                      : isFiltered
+                        ? `${displayedQuotes.length} of ${pluralize(quotes.length, 'quote')}`
+                        : pluralize(quotes.length, 'quote')
+                  }
+                >
+                  <span className="toolbar-field-label"># of Quotes</span>
+                  <div className="quotes-display-count-value">
+                    <span className="quotes-display-count-number">
+                      {quotes.length === 0 ? 0 : isFiltered ? displayedQuotes.length : quotes.length}
+                    </span>
+                    {isFiltered && quotes.length > 0 && (
+                      <span className="quotes-display-count-filtered">of {quotes.length}</span>
+                    )}
                   </div>
                 </div>
-              )}
+
+                {quotes.length > 0 && (
+                  <>
+                    <div className="toolbar-field toolbar-search-field">
+                      <span className="toolbar-field-label">Search</span>
+                      <div className="search-bar">
+                        <select
+                          className="search-bar-field"
+                          value={searchField}
+                          onChange={(e) => setSearchField(e.target.value)}
+                          aria-label="Search in"
+                        >
+                          <option value="quote">Quote</option>
+                          <option value="context">Context</option>
+                          <option value="date">Date</option>
+                          <option value="added-by">Added by</option>
+                        </select>
+                        <div className="search-bar-input-wrap">
+                          <input
+                            type="text"
+                            className="search-bar-input"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={searchPlaceholder}
+                            aria-label="Search quotes"
+                          />
+                          {searchQuery && (
+                            <button
+                              type="button"
+                              className="icon-action-btn icon-action-btn--discard search-bar-clear"
+                              onClick={() => setSearchQuery('')}
+                              aria-label="Clear search"
+                            >
+                              <X size={14} strokeWidth={2} aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="toolbar-selects">
+                      <label className="toolbar-field">
+                        <span className="toolbar-field-label">Sort</span>
+                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                          <option value="date-desc">Newest</option>
+                          <option value="date-asc">Oldest</option>
+                          <option value="speaker-asc">Speaker A–Z</option>
+                          <option value="speaker-desc">Speaker Z–A</option>
+                        </select>
+                      </label>
+                      <label className="toolbar-field">
+                        <span className="toolbar-field-label">Speaker</span>
+                        <select
+                          value={speakerFilter}
+                          onChange={(e) => setSpeakerFilter(e.target.value)}
+                        >
+                          <option value="">All</option>
+                          {speakers.map((speaker) => (
+                            <option key={speaker} value={speaker}>{speaker}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {quotes.length === 0 ? (
@@ -392,21 +431,23 @@ export default function Quotebook({ user }) {
                   : 'Try another speaker or show all speakers.'}
               </div>
             ) : (
-              displayedQuotes.map((quote) => (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  speakerColorMap={speakerColorMap}
-                  canEdit={canModerateQuote(quote, quotebook, user.id)}
-                  canDelete={canModerateQuote(quote, quotebook, user.id)}
-                  editing={editingQuoteId === quote.id}
-                  submitting={editSubmitting && editingQuoteId === quote.id}
-                  onStartEdit={() => setEditingQuoteId(quote.id)}
-                  onSaveEdit={(payload) => handleUpdateQuote(quote.id, payload)}
-                  onCancelEdit={() => setEditingQuoteId(null)}
-                  onDelete={handleDelete}
-                />
-              ))
+              displayedQuotes.map((quote) => {
+                const canModerate = canModerateQuote(quote, quotebook, user.id)
+                return (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    speakerColorMap={speakerColorMap}
+                    canModerate={canModerate}
+                    editing={editingQuoteId === quote.id}
+                    submitting={editSubmitting && editingQuoteId === quote.id}
+                    onStartEdit={() => setEditingQuoteId(quote.id)}
+                    onSaveEdit={(payload) => handleUpdateQuote(quote.id, payload)}
+                    onCancelEdit={() => setEditingQuoteId(null)}
+                    onDelete={handleDelete}
+                  />
+                )
+              })
             )}
               </section>
             </>

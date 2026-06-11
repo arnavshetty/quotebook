@@ -113,6 +113,41 @@ export const api = {
     return { quotebook: data[0] }
   },
 
+  getAllAccessibleQuotes: async () => {
+    const { data, error } = await supabase
+      .from('quote_blocks')
+      .select(`
+        id,
+        user_id,
+        quotebook_id,
+        month,
+        day_range,
+        year,
+        created_at,
+        profiles!quote_blocks_user_id_fkey ( username ),
+        quotebooks!inner ( id, title ),
+        utterances (
+          quote,
+          author,
+          context,
+          context_position,
+          line_order
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .order('line_order', { foreignTable: 'utterances', ascending: true })
+
+    if (error) throw new Error(error.message)
+
+    return {
+      quotes: (data || []).map((block) => ({
+        ...formatQuoteBlock(block),
+        quotebook_id: block.quotebook_id,
+        quotebook_title: block.quotebooks?.title || 'Quotebook',
+      })),
+    }
+  },
+
   getQuotes: async (quotebookId) => {
     const { data, error } = await supabase
       .from('quote_blocks')

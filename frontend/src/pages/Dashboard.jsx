@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { LogOut, Trash2 } from 'lucide-react'
+import { LogOut, Search, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import {
+  formatSearchResultMeta,
+  getQuoteSearchSnippet,
+  searchQuotes,
+} from '../lib/globalSearch'
 import { canLeaveQuotebook } from '../lib/quotePermissions'
 
 function sortQuotebooks(books, sortBy) {
@@ -161,6 +166,9 @@ export default function Dashboard() {
   const [leaveTarget, setLeaveTarget] = useState(null)
   const [leaving, setLeaving] = useState(false)
   const [dashboardSort, setDashboardSort] = useState('recent')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [allQuotes, setAllQuotes] = useState(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
   const loadQuotebooks = () =>
     api.getQuotebooks()
@@ -170,6 +178,33 @@ export default function Dashboard() {
   useEffect(() => {
     loadQuotebooks().finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!searchQuery.trim() || allQuotes !== null) return undefined
+
+    let cancelled = false
+    setSearchLoading(true)
+
+    api.getAllAccessibleQuotes()
+      .then((data) => {
+        if (!cancelled) setAllQuotes(data.quotes)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message)
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchQuery, allQuotes])
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || !allQuotes) return []
+    return searchQuotes(allQuotes, searchQuery).slice(0, 50)
+  }, [allQuotes, searchQuery])
 
   const { ownedBooks, sharedBooks } = useMemo(() => {
     const owned = quotebooks.filter((book) => book.user_role === 'owner')
@@ -284,8 +319,8 @@ export default function Dashboard() {
 
         {quotebooks.length > 0 && (
           <div className="dashboard-sort" role="group" aria-label="Sort quotebooks">
-            <span className="dashboard-sort-label">Sort by</span>
-            <div className="dashboard-sort-toggle">
+            <span className="segmented-label">Sort by</span>
+            <div className="segmented-toggle">
               <button
                 type="button"
                 className={dashboardSort === 'recent' ? 'is-active' : ''}
@@ -313,6 +348,71 @@ export default function Dashboard() {
       </header>
 
       {error && <p className="error">{error}</p>}
+
+      {quotebooks.length > 0 && (
+        <section className="dashboard-search">
+          <label className="dashboard-search-label" htmlFor="global-quote-search">
+            Search all quotes
+          </label>
+          <div className="dashboard-search-bar">
+            <Search size={16} strokeWidth={2} className="dashboard-search-icon" aria-hidden="true" />
+            <input
+              id="global-quote-search"
+              type="search"
+              className="dashboard-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search quote text, speaker, context, or date…"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="icon-action-btn icon-action-btn--discard dashboard-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {searchQuery.trim() && (
+        <section className="global-search-results">
+          {searchLoading ? (
+            <p className="global-search-status">Searching…</p>
+          ) : searchResults.length === 0 ? (
+            <p className="global-search-status">No matching quotes across your quotebooks.</p>
+          ) : (
+            <>
+              <p className="global-search-status">
+                {searchResults.length === 50
+                  ? 'Showing first 50 matches'
+                  : `${searchResults.length} match${searchResults.length === 1 ? '' : 'es'}`}
+              </p>
+              <ul className="global-search-list">
+                {searchResults.map((quote) => (
+                  <li key={quote.id}>
+                    <Link
+                      to={`/quotebook/${quote.quotebook_id}`}
+                      className="global-search-item"
+                    >
+                      <span className="global-search-item-book">{quote.quotebook_title}</span>
+                      <span className="global-search-item-quote">
+                        {getQuoteSearchSnippet(quote, searchQuery)}
+                      </span>
+                      <span className="global-search-item-meta">
+                        {formatSearchResultMeta(quote)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
 
       <section className="panel create-quotebook-panel">
         <h3>New quotebook</h3>
