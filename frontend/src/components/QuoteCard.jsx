@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Check, Copy, Pencil, X } from 'lucide-react'
 import { formatQuoteForCopy } from '../lib/formatQuote'
 import { formatQuoteDate } from '../lib/quoteSort'
-import { getLineSpeakerStyle } from '../lib/speakerColors'
 import QuoteForm from './QuoteForm'
+import QuoteLine from './QuoteLine'
 
 export default function QuoteCard({
   quote,
@@ -98,21 +98,12 @@ export default function QuoteCard({
       </div>
 
       {quote.lines?.map((line, index) => (
-        <blockquote
+        <QuoteLine
           key={index}
-          className="quote-line speaker-bordered"
-          style={getLineSpeakerStyle(line, speakerColorMap)}
-        >
-          {line.context && line.context_position === 'Before' && (
-            <span className="context-text">[{line.context}] </span>
-          )}
-          <span className="quote-text">&ldquo;{line.quote}&rdquo;</span>
-          {' '}
-          <span className="quote-author">— {line.author}</span>
-          {line.context && line.context_position === 'After' && (
-            <span className="context-text"> [{line.context}]</span>
-          )}
-        </blockquote>
+          line={line}
+          variant="card"
+          speakerColorMap={speakerColorMap}
+        />
       ))}
     </article>
   )

@@ -1,5 +1,7 @@
 import { sortQuotesForBookView } from './bookLayout'
 import { formatQuoteForCopy } from './formatQuote'
+import { formatLineText } from './quoteLine'
+import { pluralize } from './strings'
 import { formatQuoteDate, getPrimarySpeaker } from './quoteSort'
 
 function slugifyFilename(title) {
@@ -14,29 +16,12 @@ function getSortedQuotes(quotes, bookSort) {
   return sortQuotesForBookView(quotes, bookSort)
 }
 
-function formatLineMarkdown(line) {
-  const speaker = line.author?.trim() || 'Anonymous'
-  let text = `> “${line.quote}” — *${speaker}*`
-
-  if (line.context?.trim()) {
-    if (line.context_position === 'Before') {
-      text = `> [${line.context.trim()}] “${line.quote}” — *${speaker}*`
-    } else if (line.context_position === 'After') {
-      text = `> “${line.quote}” — *${speaker}* [${line.context.trim()}]`
-    } else {
-      text = `> “${line.quote}” — *${speaker}* (${line.context.trim()})`
-    }
-  }
-
-  return text
-}
-
 export function exportQuotebookPlainText(quotes, quotebook, bookSort = 'date') {
   const sorted = getSortedQuotes(quotes, bookSort)
   const header = [
     quotebook.title,
     quotebook.description || null,
-    sorted.length ? `${sorted.length} quote${sorted.length === 1 ? '' : 's'}` : null,
+    sorted.length ? pluralize(sorted.length, 'quote') : null,
     '',
   ].filter((line) => line !== null)
 
@@ -52,14 +37,14 @@ export function exportQuotebookMarkdown(quotes, quotebook, bookSort = 'date') {
     lines.push('', quotebook.description.trim())
   }
 
-  lines.push('', `_${sorted.length} quote${sorted.length === 1 ? '' : 's'}_`, '')
+  lines.push('', `_${pluralize(sorted.length, 'quote')}_`, '')
 
   sorted.forEach((quote) => {
     const date = formatQuoteDate(quote)
     const speaker = getPrimarySpeaker(quote)
     lines.push(`## ${speaker}${date ? ` · ${date}` : ''}`)
     ;(quote.lines || []).forEach((line) => {
-      lines.push(formatLineMarkdown(line))
+      lines.push(formatLineText(line, 'markdown'))
     })
     lines.push('')
   })

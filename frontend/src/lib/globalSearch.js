@@ -1,6 +1,5 @@
+import { QUOTE_SEARCH_FIELD_VALUES } from './searchFields'
 import { formatQuoteDate, getPrimarySpeaker, quoteMatchesSearch } from './quoteSort'
-
-const GLOBAL_SEARCH_FIELDS = ['quote', 'context', 'date', 'added-by']
 
 export function quoteMatchesGlobalSearch(quote, query) {
   const normalized = query.trim().toLowerCase()
@@ -8,7 +7,7 @@ export function quoteMatchesGlobalSearch(quote, query) {
 
   if (getPrimarySpeaker(quote).toLowerCase().includes(normalized)) return true
 
-  return GLOBAL_SEARCH_FIELDS.some((field) => quoteMatchesSearch(quote, query, field))
+  return QUOTE_SEARCH_FIELD_VALUES.some((field) => quoteMatchesSearch(quote, query, field))
 }
 
 export function searchQuotes(quotes, query) {

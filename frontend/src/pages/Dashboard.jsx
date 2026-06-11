@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { LogOut, Search, Trash2, X } from 'lucide-react'
+import { LogOut, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import {
@@ -8,6 +8,8 @@ import {
   searchQuotes,
 } from '../lib/globalSearch'
 import { canLeaveQuotebook } from '../lib/quotePermissions'
+import { pluralize } from '../lib/strings'
+import SearchInput from '../components/SearchInput'
 
 function sortQuotebooks(books, sortBy) {
   const sorted = [...books]
@@ -80,7 +82,7 @@ function QuotebookCard({
           <h3>Delete quotebook?</h3>
           <p className="quotebook-delete-warning">
             This permanently removes <strong>{book.title}</strong> and all{' '}
-            {Number(book.quote_count || 0)} quote{Number(book.quote_count || 0) === 1 ? '' : 's'} inside.
+            {pluralize(Number(book.quote_count || 0), 'quote')} inside.
           </p>
           <div className="form-group">
             <label htmlFor={`delete-confirm-${book.id}`}>Type the title to confirm</label>
@@ -123,7 +125,7 @@ function QuotebookCard({
         {book.description && <p>{book.description}</p>}
         <div className="quotebook-card-footer">
           <span className="quotebook-card-count">
-            {Number(book.quote_count || 0)} quote{Number(book.quote_count || 0) === 1 ? '' : 's'}
+            {pluralize(Number(book.quote_count || 0), 'quote')}
           </span>
           <div className="quotebook-card-footer-end">
             <span className={`badge badge--${book.user_role}`}>{book.user_role}</span>
@@ -350,32 +352,14 @@ export default function Dashboard() {
       {error && <p className="error">{error}</p>}
 
       {quotebooks.length > 0 && (
-        <section className="dashboard-search">
-          <label className="dashboard-search-label" htmlFor="global-quote-search">
-            Search all quotes
-          </label>
-          <div className="dashboard-search-bar">
-            <Search size={16} strokeWidth={2} className="dashboard-search-icon" aria-hidden="true" />
-            <input
-              id="global-quote-search"
-              type="search"
-              className="dashboard-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search quote text, speaker, context, or date…"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="icon-action-btn icon-action-btn--discard dashboard-search-clear"
-                onClick={() => setSearchQuery('')}
-                aria-label="Clear search"
-              >
-                <X size={14} strokeWidth={2} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        </section>
+        <SearchInput
+          id="global-quote-search"
+          label="Search all quotes"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          onClear={() => setSearchQuery('')}
+          placeholder="Search quote text, speaker, context, or date…"
+        />
       )}
 
       {searchQuery.trim() && (

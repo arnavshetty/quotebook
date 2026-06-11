@@ -1,10 +1,12 @@
-function normalizeLine(line) {
-  return {
-    quote: (line.quote || '').trim(),
-    author: (line.author || '').trim(),
-    context: (line.context || '').trim(),
-    context_position: (line.context_position || '').trim(),
-  }
+export function normalizeQuoteLines(lines) {
+  return (lines || [])
+    .map((line) => ({
+      quote: (line.quote || '').trim(),
+      author: (line.author || '').trim(),
+      context: (line.context || '').trim(),
+      context_position: (line.context_position || '').trim(),
+    }))
+    .filter((line) => line.quote)
 }
 
 export function normalizeQuotePayload({ month, day_range, year, lines }) {
@@ -12,9 +14,7 @@ export function normalizeQuotePayload({ month, day_range, year, lines }) {
     month: (month || '').trim(),
     day_range: (day_range || '').trim(),
     year: year != null && year !== '' ? String(year).trim() : '',
-    lines: (lines || [])
-      .map(normalizeLine)
-      .filter((line) => line.quote),
+    lines: normalizeQuoteLines(lines),
   }
 }
 

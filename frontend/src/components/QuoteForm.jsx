@@ -1,12 +1,8 @@
 import { useState } from 'react'
+import { MONTHS } from '../lib/dates'
 import { getLineSpeakerStyle } from '../lib/speakerColors'
 
 const EMPTY_LINE = { quote: '', author: '', context: '', context_position: '' }
-
-const MONTHS = [
-  '', 'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
 
 function toFormLines(lines) {
   if (!lines?.length) return [{ ...EMPTY_LINE }]

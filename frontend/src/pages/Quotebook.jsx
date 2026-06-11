@@ -1,12 +1,15 @@
-import { BookOpen, ChevronDown, Download, List, Plus, X } from 'lucide-react'
+import { BookOpen, Download, List, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import CollapsibleSection from '../components/CollapsibleSection'
 import QuotebookBookView from '../components/QuotebookBookView'
 import QuoteCard from '../components/QuoteCard'
 import QuoteForm from '../components/QuoteForm'
 import QuotebookHeader from '../components/QuotebookHeader'
 import QuotebookSidebar from '../components/QuotebookSidebar'
+import SearchInput from '../components/SearchInput'
+import { pluralize } from '../lib/strings'
 import {
   canAddQuotes,
   canLeaveQuotebook,
@@ -19,17 +22,6 @@ import { filterAndSortQuotes, getSpeakerQuoteCounts, getSpeakersFromQuotes } fro
 import { findExactDuplicate } from '../lib/duplicateQuote'
 import { downloadQuotebookExport } from '../lib/exportQuotebook'
 import { buildSpeakerColorMap } from '../lib/speakerColors'
-
-const SEARCH_PLACEHOLDERS = {
-  quote: 'Search quote text…',
-  context: 'Search context…',
-  date: 'e.g. June 2024',
-  'added-by': 'Search who added it…',
-}
-
-function pluralize(count, word) {
-  return `${count} ${word}${count === 1 ? '' : 's'}`
-}
 
 export default function Quotebook({ user }) {
   const { id } = useParams()
@@ -53,8 +45,6 @@ export default function Quotebook({ user }) {
   const [renamingSpeaker, setRenamingSpeaker] = useState(false)
   const [speakerRenameMessage, setSpeakerRenameMessage] = useState('')
   const [addQuoteOpen, setAddQuoteOpen] = useState(false)
-
-  const searchPlaceholder = SEARCH_PLACEHOLDERS[searchField]
 
   const loadQuotes = () =>
     api.getQuotes(quotebookId)
@@ -302,30 +292,22 @@ export default function Quotebook({ user }) {
           ) : (
             <>
               {canWrite && (
-                <section className={`panel panel--collapsible${addQuoteOpen ? ' is-open' : ''}`}>
-                  <button
-                    type="button"
-                    className="panel-toggle"
-                    onClick={() => setAddQuoteOpen((open) => !open)}
-                    aria-expanded={addQuoteOpen}
-                  >
-                    <span className="panel-toggle-label">
-                      <Plus size={16} strokeWidth={2} className="panel-toggle-icon" aria-hidden="true" />
-                      Add a quote
-                    </span>
-                    <ChevronDown size={16} strokeWidth={2} className="panel-toggle-chevron" aria-hidden="true" />
-                  </button>
-                  <div className="collapsible-body">
-                    <div className="collapsible-body-inner panel-body">
-                      <QuoteForm
-                        onSubmit={handleAddQuote}
-                        submitting={addSubmitting}
-                        resetAfterSubmit
-                        speakerColorMap={speakerColorMap}
-                      />
-                    </div>
-                  </div>
-                </section>
+                <CollapsibleSection
+                  variant="panel"
+                  open={addQuoteOpen}
+                  onToggle={() => setAddQuoteOpen((open) => !open)}
+                  toggleLabel="Add a quote"
+                  toggleIcon={(
+                    <Plus size={16} strokeWidth={2} className="panel-toggle-icon" aria-hidden="true" />
+                  )}
+                >
+                  <QuoteForm
+                    onSubmit={handleAddQuote}
+                    submitting={addSubmitting}
+                    resetAfterSubmit
+                    speakerColorMap={speakerColorMap}
+                  />
+                </CollapsibleSection>
               )}
 
               <section className="quotes-display">
@@ -356,39 +338,15 @@ export default function Quotebook({ user }) {
                   <>
                     <div className="toolbar-field toolbar-search-field">
                       <span className="toolbar-field-label">Search</span>
-                      <div className="search-bar">
-                        <select
-                          className="search-bar-field"
-                          value={searchField}
-                          onChange={(e) => setSearchField(e.target.value)}
-                          aria-label="Search in"
-                        >
-                          <option value="quote">Quote</option>
-                          <option value="context">Context</option>
-                          <option value="date">Date</option>
-                          <option value="added-by">Added by</option>
-                        </select>
-                        <div className="search-bar-input-wrap">
-                          <input
-                            type="text"
-                            className="search-bar-input"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={searchPlaceholder}
-                            aria-label="Search quotes"
-                          />
-                          {searchQuery && (
-                            <button
-                              type="button"
-                              className="icon-action-btn icon-action-btn--discard search-bar-clear"
-                              onClick={() => setSearchQuery('')}
-                              aria-label="Clear search"
-                            >
-                              <X size={14} strokeWidth={2} aria-hidden="true" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                      <SearchInput
+                        variant="toolbar"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        onClear={() => setSearchQuery('')}
+                        field={searchField}
+                        onFieldChange={setSearchField}
+                        ariaLabel="Search quotes"
+                      />
                     </div>
 
                     <div className="toolbar-selects">

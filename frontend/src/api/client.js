@@ -1,4 +1,56 @@
+import { normalizeQuoteLines } from '../lib/duplicateQuote'
 import { supabase } from '../lib/supabase'
+
+const QUOTE_BLOCK_SELECT = `
+  id,
+  user_id,
+  quotebook_id,
+  month,
+  day_range,
+  year,
+  created_at,
+  profiles!quote_blocks_user_id_fkey ( username ),
+  utterances (
+    quote,
+    author,
+    context,
+    context_position,
+    line_order
+  )
+`
+
+async function fetchQuoteBlocks({ quotebookId, includeQuotebookTitle = false } = {}) {
+  const select = includeQuotebookTitle
+    ? QUOTE_BLOCK_SELECT.replace(
+      'profiles!quote_blocks_user_id_fkey ( username ),',
+      `profiles!quote_blocks_user_id_fkey ( username ),
+        quotebooks!inner ( id, title ),`,
+    )
+    : QUOTE_BLOCK_SELECT
+
+  let query = supabase
+    .from('quote_blocks')
+    .select(select)
+    .order('created_at', { ascending: false })
+    .order('line_order', { foreignTable: 'utterances', ascending: true })
+
+  if (quotebookId != null) {
+    query = query.eq('quotebook_id', quotebookId)
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data || []).map((block) => {
+    const quote = formatQuoteBlock(block)
+    if (!includeQuotebookTitle) return quote
+    return {
+      ...quote,
+      quotebook_id: block.quotebook_id,
+      quotebook_title: block.quotebooks?.title || 'Quotebook',
+    }
+  })
+}
 
 async function getProfile(userId) {
   const { data, error } = await supabase
@@ -134,78 +186,16 @@ export const api = {
     return { quotebook: data[0] }
   },
 
-  getAllAccessibleQuotes: async () => {
-    const { data, error } = await supabase
-      .from('quote_blocks')
-      .select(`
-        id,
-        user_id,
-        quotebook_id,
-        month,
-        day_range,
-        year,
-        created_at,
-        profiles!quote_blocks_user_id_fkey ( username ),
-        quotebooks!inner ( id, title ),
-        utterances (
-          quote,
-          author,
-          context,
-          context_position,
-          line_order
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .order('line_order', { foreignTable: 'utterances', ascending: true })
+  getAllAccessibleQuotes: async () => ({
+    quotes: await fetchQuoteBlocks({ includeQuotebookTitle: true }),
+  }),
 
-    if (error) throw new Error(error.message)
-
-    return {
-      quotes: (data || []).map((block) => ({
-        ...formatQuoteBlock(block),
-        quotebook_id: block.quotebook_id,
-        quotebook_title: block.quotebooks?.title || 'Quotebook',
-      })),
-    }
-  },
-
-  getQuotes: async (quotebookId) => {
-    const { data, error } = await supabase
-      .from('quote_blocks')
-      .select(`
-        id,
-        user_id,
-        quotebook_id,
-        month,
-        day_range,
-        year,
-        created_at,
-        profiles!quote_blocks_user_id_fkey ( username ),
-        utterances (
-          quote,
-          author,
-          context,
-          context_position,
-          line_order
-        )
-      `)
-      .eq('quotebook_id', quotebookId)
-      .order('created_at', { ascending: false })
-      .order('line_order', { foreignTable: 'utterances', ascending: true })
-
-    if (error) throw new Error(error.message)
-    return { quotes: (data || []).map(formatQuoteBlock) }
-  },
+  getQuotes: async (quotebookId) => ({
+    quotes: await fetchQuoteBlocks({ quotebookId }),
+  }),
 
   addQuote: async (quotebookId, { month, day_range, year, lines }) => {
-    const payload = (lines || [])
-      .map((line) => ({
-        quote: (line.quote || '').trim(),
-        author: (line.author || '').trim(),
-        context: (line.context || '').trim(),
-        context_position: line.context_position || '',
-      }))
-      .filter((line) => line.quote)
+    const payload = normalizeQuoteLines(lines)
 
     const { error } = await supabase.rpc('add_quote_entry', {
       p_quotebook_id: quotebookId,
@@ -296,14 +286,7 @@ export const api = {
   },
 
   updateQuote: async (blockId, { month, day_range, year, lines }) => {
-    const payload = (lines || [])
-      .map((line) => ({
-        quote: (line.quote || '').trim(),
-        author: (line.author || '').trim(),
-        context: (line.context || '').trim(),
-        context_position: line.context_position || '',
-      }))
-      .filter((line) => line.quote)
+    const payload = normalizeQuoteLines(lines)
 
     const { error } = await supabase.rpc('update_quote_entry', {
       p_block_id: blockId,

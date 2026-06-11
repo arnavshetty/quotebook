@@ -1,22 +1,11 @@
-const MONTH_INDEX = {
-  January: 1,
-  February: 2,
-  March: 3,
-  April: 4,
-  May: 5,
-  June: 6,
-  July: 7,
-  August: 8,
-  September: 9,
-  October: 10,
-  November: 11,
-  December: 12,
-}
+import { formatQuoteDate, getUserDateSortKey } from './dates'
+
+export const ANONYMOUS_SPEAKER = 'Anonymous'
 
 export function getPrimarySpeaker(quote) {
   const lines = quote.lines || []
   const withAuthor = lines.find((line) => line.author?.trim())
-  return (withAuthor?.author || lines[0]?.author || '').trim() || 'Unknown speaker'
+  return (withAuthor?.author || lines[0]?.author || '').trim() || ANONYMOUS_SPEAKER
 }
 
 export function getSpeakersFromQuotes(quotes) {
@@ -36,7 +25,7 @@ export function getSpeakerQuoteCounts(quotes) {
   for (const quote of quotes) {
     const speakersInQuote = new Set()
     for (const line of quote.lines || []) {
-      const speaker = (line.author || '').trim() || 'Anonymous'
+      const speaker = (line.author || '').trim() || ANONYMOUS_SPEAKER
       speakersInQuote.add(speaker)
     }
     for (const speaker of speakersInQuote) {
@@ -81,16 +70,6 @@ export function quoteMatchesSearch(quote, query, field = 'quote') {
   return values.some((value) => value.toLowerCase().includes(normalized))
 }
 
-function getUserDateSortKey(quote) {
-  const month = quote.month ? MONTH_INDEX[quote.month] || 0 : 0
-  const dayMatch = quote.day_range?.match(/\d+/)
-  const day = dayMatch ? Number(dayMatch[0]) : 0
-  const year = quote.year || 0
-
-  if (!year && !month && !day) return null
-  return year * 10000 + month * 100 + day
-}
-
 function getDateSortKey(quote) {
   const userDate = getUserDateSortKey(quote)
   if (userDate !== null) return userDate
@@ -109,10 +88,7 @@ function compareBySpeaker(a, b, ascending) {
   return compareByDate(a, b, false)
 }
 
-export function formatQuoteDate(quote) {
-  const parts = [quote.month, quote.day_range, quote.year].filter(Boolean)
-  return parts.length ? parts.join(' ') : null
-}
+export { formatQuoteDate }
 
 export function filterAndSortQuotes(quotes, { sortBy, speaker, search, searchField }) {
   const filtered = quotes.filter(

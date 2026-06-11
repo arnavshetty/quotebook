@@ -1,24 +1,4 @@
--- Migrate from custom users table to Supabase Auth + profiles
-
--- Drop old policies
-DROP POLICY IF EXISTS "Users can view their own profile" ON users;
-DROP POLICY IF EXISTS "Users can update their own profile" ON users;
-DROP POLICY IF EXISTS "Users can view quotebooks they own or are shared with them" ON quotebooks;
-DROP POLICY IF EXISTS "Users can create their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Owners can update their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Owners can delete their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Users can view permissions for quotebooks they have access to" ON quotebook_permissions;
-DROP POLICY IF EXISTS "Only quotebook owners can manage permissions" ON quotebook_permissions;
-DROP POLICY IF EXISTS "Users can view quote blocks in accessible quotebooks" ON quote_blocks;
-DROP POLICY IF EXISTS "Users can add quote blocks if they are owners or contributors" ON quote_blocks;
-DROP POLICY IF EXISTS "Users can view utterances if they can view the quote block" ON utterances;
-DROP POLICY IF EXISTS "Users can insert utterances if they can write to the quote block" ON utterances;
-
-DROP TABLE IF EXISTS utterances CASCADE;
-DROP TABLE IF EXISTS quote_blocks CASCADE;
-DROP TABLE IF EXISTS quotebook_permissions CASCADE;
-DROP TABLE IF EXISTS quotebooks CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Quotebook initial schema (squashed baseline)
 
 -- ==========================================================
 -- PROFILES (extends auth.users)
@@ -175,10 +155,63 @@ WITH CHECK (
     AND quotebook_id IN (SELECT public.writable_quotebook_ids())
 );
 
+CREATE POLICY "Creators can update their quote blocks"
+ON quote_blocks FOR UPDATE
+TO authenticated
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
 CREATE POLICY "Creators can delete their quote blocks"
 ON quote_blocks FOR DELETE
 TO authenticated
 USING (user_id = auth.uid());
+
+CREATE POLICY "Moderators can update quote blocks"
+ON quote_blocks FOR UPDATE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
+    )
+);
+
+CREATE POLICY "Moderators can delete quote blocks"
+ON quote_blocks FOR DELETE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
+    )
+);
 
 CREATE POLICY "Users can view utterances in accessible quotebooks"
 ON utterances FOR SELECT
@@ -200,6 +233,55 @@ WITH CHECK (
         WHERE b.id = utterances.quote_block_id
           AND b.user_id = auth.uid()
           AND b.quotebook_id IN (SELECT public.writable_quotebook_ids())
+    )
+);
+
+CREATE POLICY "Creators can delete utterances on their blocks"
+ON utterances FOR DELETE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM quote_blocks b
+        WHERE b.id = utterances.quote_block_id
+          AND b.user_id = auth.uid()
+    )
+);
+
+CREATE POLICY "Moderators can delete utterances on quote blocks"
+ON utterances FOR DELETE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = utterances.quote_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
+    )
+);
+
+CREATE POLICY "Moderators can insert utterances"
+ON utterances FOR INSERT
+TO authenticated
+WITH CHECK (
+    EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = utterances.quote_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
     )
 );
 
@@ -236,7 +318,53 @@ CREATE TRIGGER on_auth_user_created
     EXECUTE FUNCTION public.handle_new_user();
 
 -- ==========================================================
--- RPC: list quotebooks with role
+-- PERMISSION HELPERS
+-- ==========================================================
+
+CREATE OR REPLACE FUNCTION public.can_manage_quotebook_collaborators(p_quotebook_id INTEGER)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = p_quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.can_moderate_quote_block(p_block_id INTEGER)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = p_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role IN ('contributor', 'admin')
+          )
+    );
+$$;
+
+-- ==========================================================
+-- RPC: quotebooks
 -- ==========================================================
 
 CREATE OR REPLACE FUNCTION public.get_accessible_quotebooks()
@@ -246,7 +374,8 @@ RETURNS TABLE (
     description TEXT,
     created_by UUID,
     created_at TIMESTAMPTZ,
-    user_role TEXT
+    user_role TEXT,
+    quote_count BIGINT
 )
 LANGUAGE sql
 STABLE
@@ -262,17 +391,18 @@ AS $$
         CASE
             WHEN q.created_by = auth.uid() THEN 'owner'
             ELSE p.role
-        END AS user_role
+        END AS user_role,
+        (
+            SELECT COUNT(*)::BIGINT
+            FROM quote_blocks b
+            WHERE b.quotebook_id = q.id
+        ) AS quote_count
     FROM quotebooks q
     LEFT JOIN quotebook_permissions p
         ON q.id = p.quotebook_id AND p.user_id = auth.uid()
     WHERE q.created_by = auth.uid() OR p.user_id = auth.uid()
     ORDER BY q.created_at DESC;
 $$;
-
--- ==========================================================
--- RPC: single quotebook with role
--- ==========================================================
 
 CREATE OR REPLACE FUNCTION public.get_quotebook_for_user(p_quotebook_id INTEGER)
 RETURNS TABLE (
@@ -305,8 +435,63 @@ AS $$
       AND (q.created_by = auth.uid() OR p.user_id = auth.uid());
 $$;
 
+CREATE OR REPLACE FUNCTION public.create_quotebook(
+    p_title TEXT,
+    p_description TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    id INTEGER,
+    title TEXT,
+    description TEXT,
+    created_by UUID,
+    created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'You must be logged in to create a quotebook';
+    END IF;
+
+    IF trim(p_title) = '' THEN
+        RAISE EXCEPTION 'Title is required';
+    END IF;
+
+    RETURN QUERY
+    INSERT INTO quotebooks (title, description, created_by)
+    VALUES (trim(p_title), NULLIF(trim(p_description), ''), auth.uid())
+    RETURNING quotebooks.id, quotebooks.title, quotebooks.description,
+              quotebooks.created_by, quotebooks.created_at;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.leave_quotebook(p_quotebook_id INTEGER)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM quotebooks
+        WHERE id = p_quotebook_id AND created_by = auth.uid()
+    ) THEN
+        RAISE EXCEPTION 'Owners cannot leave their own quotebook. Delete it instead.';
+    END IF;
+
+    DELETE FROM quotebook_permissions
+    WHERE quotebook_id = p_quotebook_id AND user_id = auth.uid();
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'You do not have access to this quotebook';
+    END IF;
+END;
+$$;
+
 -- ==========================================================
--- RPC: add quote block + utterances
+-- RPC: quotes
 -- ==========================================================
 
 CREATE OR REPLACE FUNCTION public.add_quote_entry(
@@ -388,9 +573,204 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.update_quote_entry(
+    p_block_id INTEGER,
+    p_month TEXT,
+    p_day_range TEXT,
+    p_year INTEGER,
+    p_lines JSONB
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    line JSONB;
+    idx INTEGER := 0;
+    quote_text TEXT;
+    author_text TEXT;
+BEGIN
+    IF NOT public.can_moderate_quote_block(p_block_id) THEN
+        RAISE EXCEPTION 'You do not have permission to edit this quote';
+    END IF;
+
+    IF p_lines IS NULL OR jsonb_array_length(p_lines) = 0 THEN
+        RAISE EXCEPTION 'At least one quote line is required';
+    END IF;
+
+    UPDATE quote_blocks
+    SET
+        month = NULLIF(p_month, ''),
+        day_range = NULLIF(p_day_range, ''),
+        year = p_year
+    WHERE id = p_block_id;
+
+    DELETE FROM utterances WHERE quote_block_id = p_block_id;
+
+    FOR line IN SELECT * FROM jsonb_array_elements(p_lines)
+    LOOP
+        quote_text := NULLIF(TRIM(line->>'quote'), '');
+        IF quote_text IS NULL THEN
+            CONTINUE;
+        END IF;
+
+        author_text := NULLIF(TRIM(line->>'author'), '');
+        IF author_text IS NULL THEN
+            author_text := 'Anonymous';
+        END IF;
+
+        INSERT INTO utterances (
+            quote_block_id,
+            quote,
+            author,
+            context,
+            context_position,
+            line_order
+        )
+        VALUES (
+            p_block_id,
+            quote_text,
+            author_text,
+            NULLIF(TRIM(line->>'context'), ''),
+            NULLIF(line->>'context_position', ''),
+            idx
+        );
+
+        idx := idx + 1;
+    END LOOP;
+
+    IF idx = 0 THEN
+        RAISE EXCEPTION 'At least one quote line is required';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.rename_speaker_in_quotebook(
+    p_quotebook_id INTEGER,
+    p_old_name TEXT,
+    p_new_name TEXT
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    updated_count INTEGER;
+BEGIN
+    p_old_name := TRIM(p_old_name);
+    p_new_name := TRIM(p_new_name);
+
+    IF p_old_name = '' OR p_new_name = '' THEN
+        RAISE EXCEPTION 'Speaker names cannot be empty';
+    END IF;
+
+    IF p_old_name = p_new_name THEN
+        RETURN 0;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = p_quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    ) THEN
+        RAISE EXCEPTION 'You do not have permission to rename speakers';
+    END IF;
+
+    UPDATE utterances u
+    SET author = p_new_name
+    FROM quote_blocks b
+    WHERE u.quote_block_id = b.id
+      AND b.quotebook_id = p_quotebook_id
+      AND u.author = p_old_name;
+
+    GET DIAGNOSTICS updated_count = ROW_COUNT;
+    RETURN updated_count;
+END;
+$$;
+
 -- ==========================================================
--- RPC: share quotebook by email
+-- RPC: collaborators
 -- ==========================================================
+
+CREATE OR REPLACE FUNCTION public.get_quotebook_collaborators(p_quotebook_id INTEGER)
+RETURNS TABLE (
+    user_id UUID,
+    username TEXT,
+    email TEXT,
+    role TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT p.user_id, pr.username, au.email::TEXT, p.role
+    FROM quotebook_permissions p
+    JOIN profiles pr ON pr.id = p.user_id
+    JOIN auth.users au ON au.id = p.user_id
+    WHERE p.quotebook_id = p_quotebook_id
+      AND public.can_manage_quotebook_collaborators(p_quotebook_id);
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_quotebook_collaborator_role(
+    p_quotebook_id INTEGER,
+    p_user_id UUID,
+    p_role TEXT
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NOT public.can_manage_quotebook_collaborators(p_quotebook_id) THEN
+        RAISE EXCEPTION 'Only the owner or an admin can manage collaborators';
+    END IF;
+
+    IF p_role NOT IN ('viewer', 'contributor', 'admin') THEN
+        RAISE EXCEPTION 'Invalid role';
+    END IF;
+
+    UPDATE quotebook_permissions
+    SET role = p_role
+    WHERE quotebook_id = p_quotebook_id AND user_id = p_user_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Collaborator not found';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.remove_quotebook_collaborator(
+    p_quotebook_id INTEGER,
+    p_user_id UUID
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NOT public.can_manage_quotebook_collaborators(p_quotebook_id) THEN
+        RAISE EXCEPTION 'Only the owner or an admin can manage collaborators';
+    END IF;
+
+    DELETE FROM quotebook_permissions
+    WHERE quotebook_id = p_quotebook_id AND user_id = p_user_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Collaborator not found';
+    END IF;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.share_quotebook_with_email(
     p_quotebook_id INTEGER,
@@ -405,11 +785,8 @@ AS $$
 DECLARE
     friend_id UUID;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM quotebooks
-        WHERE id = p_quotebook_id AND created_by = auth.uid()
-    ) THEN
-        RAISE EXCEPTION 'Only the owner can share this quotebook';
+    IF NOT public.can_manage_quotebook_collaborators(p_quotebook_id) THEN
+        RAISE EXCEPTION 'Only the owner or an admin can share this quotebook';
     END IF;
 
     IF p_role NOT IN ('viewer', 'contributor', 'admin') THEN
@@ -430,37 +807,9 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.create_quotebook(
-    p_title TEXT,
-    p_description TEXT DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    title TEXT,
-    description TEXT,
-    created_by UUID,
-    created_at TIMESTAMPTZ
-)
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public
-AS $$
-BEGIN
-    IF auth.uid() IS NULL THEN
-        RAISE EXCEPTION 'You must be logged in to create a quotebook';
-    END IF;
-
-    IF trim(p_title) = '' THEN
-        RAISE EXCEPTION 'Title is required';
-    END IF;
-
-    RETURN QUERY
-    INSERT INTO quotebooks (title, description, created_by)
-    VALUES (trim(p_title), NULLIF(trim(p_description), ''), auth.uid())
-    RETURNING quotebooks.id, quotebooks.title, quotebooks.description,
-              quotebooks.created_by, quotebooks.created_at;
-END;
-$$;
+-- ==========================================================
+-- GRANTS
+-- ==========================================================
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON quotebooks TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON quote_blocks TO authenticated;
@@ -473,4 +822,12 @@ GRANT EXECUTE ON FUNCTION public.create_quotebook(TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_accessible_quotebooks() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_quotebook_for_user(INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.add_quote_entry(INTEGER, TEXT, TEXT, INTEGER, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_quote_entry(INTEGER, TEXT, TEXT, INTEGER, JSONB) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.share_quotebook_with_email(INTEGER, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_quotebook_collaborators(INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_quotebook_collaborator_role(INTEGER, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.remove_quotebook_collaborator(INTEGER, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_moderate_quote_block(INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_manage_quotebook_collaborators(INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.leave_quotebook(INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rename_speaker_in_quotebook(INTEGER, TEXT, TEXT) TO authenticated;

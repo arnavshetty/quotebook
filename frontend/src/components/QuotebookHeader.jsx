@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Pencil, X } from 'lucide-react'
 import { api } from '../api/client'
+import InlineEditActions from './InlineEditActions'
 
 export default function QuotebookHeader({
   quotebookId,
@@ -92,39 +92,16 @@ export default function QuotebookHeader({
           )}
           {canEdit && (
             <div className="inline-header-actions">
-              {editing && showActions ? (
-                <>
-                  <button
-                    type="submit"
-                    className="icon-action-btn icon-action-btn--confirm"
-                    disabled={saving}
-                    aria-label="Save changes"
-                  >
-                    <Check size={15} strokeWidth={2} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-action-btn icon-action-btn--discard"
-                    onClick={handleCancel}
-                    disabled={saving}
-                    aria-label="Discard changes"
-                  >
-                    <X size={15} strokeWidth={2} aria-hidden="true" />
-                  </button>
-                </>
-              ) : editing ? (
-                <span className="inline-header-actions-spacer" aria-hidden="true" />
-              ) : (
-                <button
-                  type="button"
-                  className="icon-action-btn"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={startEditing}
-                  aria-label="Edit title and description"
-                >
-                  <Pencil size={15} strokeWidth={2} aria-hidden="true" />
-                </button>
-              )}
+              <InlineEditActions
+                editing={editing}
+                showEditPlaceholder={editing && !showActions}
+                onEdit={startEditing}
+                onCancel={handleCancel}
+                saveType="submit"
+                saving={saving}
+                iconSize={15}
+                editLabel="Edit title and description"
+              />
             </div>
           )}
         </h2>
