@@ -25,16 +25,17 @@ npm install
 If you use the Supabase CLI and have linked your project:
 
 ```bash
+cd quotebook
+export SUPABASE_DB_PASSWORD='your-db-password'
 supabase db push
 ```
 
-Or run the SQL in `supabase/migrations/` from the Supabase SQL editor (in order).
+Or run the SQL files in `supabase/migrations/` from the Supabase SQL editor **in filename order**.
 
 3. **Configure environment**
 
-Copy the example env file and add your project keys from **Supabase → Project Settings → API**:
-
 ```bash
+cd frontend
 cp .env.example .env
 ```
 
@@ -55,17 +56,51 @@ Open http://localhost:5173, sign up, and start adding quotes.
 
 If email confirmation is enabled in Supabase, new users must confirm their email before logging in. For local dev you can disable it under **Authentication → Providers → Email**.
 
+## Production deploy
+
+### 1. Database
+
+Apply every migration in `supabase/migrations/` to your remote project:
+
+```bash
+supabase link --project-ref your-project-ref
+export SUPABASE_DB_PASSWORD='your-db-password'
+supabase db push
+```
+
+### 2. Vercel (frontend)
+
+1. Import the repo at [vercel.com](https://vercel.com)
+2. Set **Root Directory** to `frontend`
+3. Add environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy
+
+### 3. Supabase auth URLs
+
+In **Authentication → URL Configuration**:
+
+| Field | Value |
+|-------|-------|
+| Site URL | `https://your-app.vercel.app` |
+| Redirect URLs | `https://your-app.vercel.app/**` |
+| | `http://localhost:5173/reset-password` (local dev) |
+| | `https://your-app.vercel.app/reset-password` |
+
 ## Project structure
 
 ```
-frontend/          React app (Vite)
+frontend/                 React app (Vite)
 supabase/
-  migrations/      Database schema, RLS policies, RPC functions
+  migrations/             Database schema, RLS policies, RPC functions
 ```
 
 ## Features
 
-- Multi-line dialogue logging
+- Multi-line dialogue logging with fuzzy dates
 - Quotebooks with sharing (viewer / contributor / admin roles)
+- Contributors can edit any quote in a shared quotebook
+- Admins can manage collaborators
+- Global search, read-mode export, book view
 - Supabase Auth + RLS for security
-- Postgres RPCs for multi-utterance inserts and share-by-email

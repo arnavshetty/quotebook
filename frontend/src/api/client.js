@@ -11,14 +11,35 @@ async function getProfile(userId) {
   return data
 }
 
+function usernameFromAuthUser(authUser) {
+  const meta = authUser.user_metadata || {}
+  return (
+    meta.username
+    || meta.user_name
+    || meta.preferred_username
+    || meta.full_name
+    || meta.name
+    || authUser.email?.split('@')[0]
+    || 'User'
+  )
+}
+
 async function toAppUser(authUser) {
   if (!authUser) return null
 
-  const profile = await getProfile(authUser.id)
-  return {
-    id: authUser.id,
-    email: authUser.email,
-    username: profile.username,
+  try {
+    const profile = await getProfile(authUser.id)
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      username: profile.username,
+    }
+  } catch {
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      username: usernameFromAuthUser(authUser),
+    }
   }
 }
 

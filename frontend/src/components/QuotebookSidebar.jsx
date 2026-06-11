@@ -52,10 +52,10 @@ export default function QuotebookSidebar({
     setSharing(true)
     try {
       const email = shareEmail.trim()
-      await api.shareQuotebook(quotebookId, { email, role: shareRole })
+      const result = await api.shareQuotebook(quotebookId, { email, role: shareRole })
       setShareEmail('')
       await loadCollaborators()
-      setMessage(`Shared with ${email}.`)
+      setMessage(result.message || `Shared with ${email}.`)
     } catch (err) {
       setError(err.message)
     } finally {

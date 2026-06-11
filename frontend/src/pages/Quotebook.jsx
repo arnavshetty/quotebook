@@ -10,6 +10,7 @@ import QuotebookSidebar from '../components/QuotebookSidebar'
 import {
   canAddQuotes,
   canLeaveQuotebook,
+  canManageCollaborators,
   canRenameSpeakers,
   canModerateQuote,
   isQuotebookOwner,
@@ -194,7 +195,7 @@ export default function Quotebook({ user }) {
 
   if (loading) return <p className="page-message">Loading quotebook…</p>
 
-  const showCollaborators = isOwner && viewMode === 'edit'
+  const showCollaborators = canManageCollaborators(quotebook) && viewMode === 'edit'
   const showSidebar = speakerLeaderboard.length > 0 || showCollaborators || canLeave
 
   return (

@@ -2165,6 +2165,35 @@ button:disabled {
   overflow: hidden;
 }
 
+.book-measure-probe {
+  position: absolute;
+  top: 0.65rem;
+  bottom: 0.65rem;
+  left: 0.65rem;
+  width: calc((100% - 1.3rem - 18px) / 2);
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.book-measure-groups {
+  position: fixed;
+  top: 0;
+  left: -20000px;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.book-measure-group {
+  width: 100%;
+}
+
+.book-spread--measuring {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .book-shell--empty {
   display: flex;
   align-items: center;
@@ -2579,6 +2608,10 @@ button:disabled {
   .book-spread {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
+  }
+
+  .book-measure-probe {
+    width: calc(100% - 1.3rem);
   }
 
   .book-gutter {

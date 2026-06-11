@@ -15,8 +15,6 @@ const MONTH_INDEX = {
   December: 12,
 }
 
-const PAGE_WEIGHT = 1120
-
 export function quoteHasUserDate(quote) {
   return Boolean(quote.year || quote.month || quote.day_range)
 }
@@ -161,23 +159,9 @@ function buildSpeakerStream(quotes) {
   return items
 }
 
-function itemWeight(item) {
-  if (item.type === 'heading') {
-    return 48 + item.text.length
-  }
-
-  if (item.type === 'quote') {
-    let weight = 72
-    for (const line of item.quote.lines || []) {
-      weight += (line.quote?.length || 0)
-        + (line.author?.length || 0)
-        + (line.context?.length || 0)
-        + 36
-    }
-    return weight
-  }
-
-  return 0
+export function buildBookItemStream(quotes, mode = 'date') {
+  const sorted = sortQuotesForBookView(quotes, mode)
+  return mode === 'speaker' ? buildSpeakerStream(sorted) : buildDateStream(sorted)
 }
 
 function groupItemsForPacking(items) {
@@ -210,55 +194,69 @@ function groupItemsForPacking(items) {
   return groups
 }
 
-function groupWeight(group) {
-  return group.items.reduce((sum, item) => sum + itemWeight(item), 0)
+export function buildBookGroups(quotes, mode = 'date') {
+  return groupItemsForPacking(buildBookItemStream(quotes, mode))
 }
 
-function packSpreads(items) {
-  if (items.length === 0) return []
+function pushSpread(spreads, current) {
+  if (current.left.length || current.right.length) {
+    spreads.push(current)
+  }
+}
 
-  const groups = groupItemsForPacking(items)
+export function packSpreadsByHeight(groups, groupHeights, pageCapacityPx) {
+  if (groups.length === 0) return []
+
+  const capacity = Math.max(pageCapacityPx, 120)
   const spreads = []
   let current = { left: [], right: [] }
   let side = 'left'
-  let weight = 0
+  let used = 0
 
-  const pushSpread = () => {
-    if (current.left.length || current.right.length) {
-      spreads.push(current)
-    }
-    current = { left: [], right: [] }
-    side = 'left'
-    weight = 0
-  }
+  for (let index = 0; index < groups.length; index += 1) {
+    const group = groups[index]
+    const height = Math.max(groupHeights[index] || 0, 1)
 
-  for (const group of groups) {
-    const weightDelta = groupWeight(group)
-
-    if (weight + weightDelta > PAGE_WEIGHT && current[side].length > 0) {
+    if (used + height > capacity && current[side].length > 0) {
       if (side === 'left') {
         side = 'right'
-        weight = 0
+        used = 0
       } else {
-        pushSpread()
+        pushSpread(spreads, current)
+        current = { left: [], right: [] }
+        side = 'left'
+        used = 0
+      }
+    }
+
+    if (height > capacity && current[side].length > 0) {
+      if (side === 'left') {
+        side = 'right'
+        used = 0
+      } else {
+        pushSpread(spreads, current)
+        current = { left: [], right: [] }
+        side = 'left'
+        used = 0
       }
     }
 
     for (const item of group.items) {
       current[side].push(item)
     }
-    weight += weightDelta
+    used += height
   }
 
-  pushSpread()
+  pushSpread(spreads, current)
   return spreads
 }
 
-export function buildBookSpreads(quotes, mode = 'date') {
-  const sorted = sortQuotesForBookView(quotes, mode)
-  const items = mode === 'speaker'
-    ? buildSpeakerStream(sorted)
-    : buildDateStream(sorted)
+export function buildBookSpreads(quotes, mode = 'date', pageCapacityPx, groupHeights) {
+  const groups = buildBookGroups(quotes, mode)
 
-  return packSpreads(items)
+  if (!pageCapacityPx || !groupHeights || groupHeights.length !== groups.length) {
+    return []
+  }
+
+  return packSpreadsByHeight(groups, groupHeights, pageCapacityPx)
 }

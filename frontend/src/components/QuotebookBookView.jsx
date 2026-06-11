@@ -1,62 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { buildBookSpreads } from '../lib/bookLayout'
-
-function BookHeading({ level, text }) {
-  if (level === 1) return <h1 className="book-heading book-heading--1">{text}</h1>
-  if (level === 2) return <h2 className="book-heading book-heading--2">{text}</h2>
-  if (level === 3) return <h3 className="book-heading book-heading--3">{text}</h3>
-  return <h4 className="book-heading book-heading--4">{text}</h4>
-}
-
-function BookQuote({ quote }) {
-  return (
-    <article className="book-quote">
-      {quote.lines?.map((line, index) => (
-        <blockquote key={index} className="book-quote-line">
-          {line.context && line.context_position === 'Before' && (
-            <span className="context-text">[{line.context}] </span>
-          )}
-          <span className="book-quote-text">&ldquo;{line.quote}&rdquo;</span>
-          {' '}
-          <span className="book-quote-author">— {line.author}</span>
-          {line.context && line.context_position === 'After' && (
-            <span className="context-text"> [{line.context}]</span>
-          )}
-        </blockquote>
-      ))}
-    </article>
-  )
-}
-
-function BookPageContent({ items }) {
-  if (!items.length) {
-    return <div className="book-page-body book-page-body--blank" aria-hidden="true" />
-  }
-
-  return (
-    <div className="book-page-body">
-      {items.map((item, index) => {
-        if (item.type === 'heading') {
-          return (
-            <BookHeading
-              key={`heading-${index}-${item.text}-${item.level}`}
-              level={item.level}
-              text={item.text}
-            />
-          )
-        }
-
-        return (
-          <BookQuote
-            key={`quote-${item.quote.id}-${index}`}
-            quote={item.quote}
-          />
-        )
-      })}
-    </div>
-  )
-}
+import { BookPageContent } from './BookPageItems'
+import useMeasuredBookSpreads from '../hooks/useMeasuredBookSpreads'
 
 function BookPageSide({
   items,
@@ -90,10 +35,15 @@ export default function QuotebookBookView({
   const [spreadIndex, setSpreadIndex] = useState(0)
   const [turnDirection, setTurnDirection] = useState(null)
 
-  const spreads = useMemo(
-    () => buildBookSpreads(quotes, bookSort),
-    [quotes, bookSort],
-  )
+  const {
+    shellRef,
+    probeRef,
+    groupsMeasureRef,
+    groups,
+    spreads,
+    isReady,
+    columnWidthPx,
+  } = useMeasuredBookSpreads(quotes, bookSort)
 
   const totalSpreads = spreads.length
   const totalPages = totalSpreads * 2
@@ -133,7 +83,7 @@ export default function QuotebookBookView({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [goToSpread, spreadIndex])
 
-  if (totalSpreads === 0) {
+  if (quotes.length === 0) {
     return (
       <section className="book-view">
         <div className="book-shell book-shell--empty">
@@ -162,24 +112,51 @@ export default function QuotebookBookView({
 
   return (
     <section className="book-view">
-      <div className="book-shell">
-        <div
-          key={spreadIndex}
-          className={`book-spread${turnDirection ? ` book-spread--turn-${turnDirection}` : ''}`}
-        >
-          <BookPageSide
-            items={currentSpread.left}
-            pageNumber={leftPageNumber}
-            title={quotebookTitle}
-          />
-          <div className="book-gutter" aria-hidden="true" />
-          <BookPageSide
-            items={currentSpread.right}
-            pageNumber={rightPageNumber}
-            title={quotebookTitle}
-            isRight
-          />
+      <div className="book-shell" ref={shellRef}>
+        <div className="book-measure-probe" ref={probeRef} aria-hidden="true">
+          <BookPageSide items={[]} pageNumber={1} title={quotebookTitle} />
         </div>
+
+        {groups.length > 0 && columnWidthPx && (
+          <div
+            ref={groupsMeasureRef}
+            className="book-measure-groups"
+            style={{ width: columnWidthPx }}
+            aria-hidden="true"
+          >
+            {groups.map((group, index) => (
+              <div key={index} data-measure-group={index} className="book-measure-group">
+                <BookPageContent items={group.items} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isReady && currentSpread ? (
+          <div
+            key={spreadIndex}
+            className={`book-spread${turnDirection ? ` book-spread--turn-${turnDirection}` : ''}`}
+          >
+            <BookPageSide
+              items={currentSpread.left}
+              pageNumber={leftPageNumber}
+              title={quotebookTitle}
+            />
+            <div className="book-gutter" aria-hidden="true" />
+            <BookPageSide
+              items={currentSpread.right}
+              pageNumber={rightPageNumber}
+              title={quotebookTitle}
+              isRight
+            />
+          </div>
+        ) : (
+          <div className="book-spread book-spread--measuring" aria-hidden="true">
+            <BookPageSide items={[]} title={quotebookTitle} />
+            <div className="book-gutter" />
+            <BookPageSide items={[]} title={quotebookTitle} isRight />
+          </div>
+        )}
       </div>
 
       <nav className="book-nav" aria-label="Page navigation">
@@ -187,20 +164,22 @@ export default function QuotebookBookView({
           type="button"
           className="book-nav-btn"
           onClick={() => goToSpread(spreadIndex - 1, 'back')}
-          disabled={spreadIndex === 0}
+          disabled={!isReady || spreadIndex === 0}
           aria-label="Previous spread"
         >
           <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
           Previous
         </button>
         <span className="book-nav-status">
-          Pages {leftPageNumber}–{rightPageNumber} of {totalPages}
+          {isReady
+            ? `Pages ${leftPageNumber}–${rightPageNumber} of ${totalPages}`
+            : 'Preparing pages…'}
         </span>
         <button
           type="button"
           className="book-nav-btn"
           onClick={() => goToSpread(spreadIndex + 1, 'forward')}
-          disabled={spreadIndex >= totalSpreads - 1}
+          disabled={!isReady || spreadIndex >= totalSpreads - 1}
           aria-label="Next spread"
         >
           Next
