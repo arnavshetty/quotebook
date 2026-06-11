@@ -110,7 +110,6 @@ export default function Quotebook({ user }) {
     try {
       const data = await api.addQuote(quotebookId, payload)
       setQuotes(data.quotes)
-      if (data.quotes.length > 0) setAddQuoteOpen(false)
     } catch (err) {
       setError(err.message)
       throw err
