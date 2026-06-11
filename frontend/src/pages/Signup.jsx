@@ -38,7 +38,8 @@ export default function Signup({ onSignup }) {
   return (
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Create account</h2>
+        <h2>Join Quotebook</h2>
+        <p className="auth-tagline">Start collecting the lines that matter</p>
         {error && <p className="error">{error}</p>}
         {message && <p className="success">{message}</p>}
         <div className="form-group">

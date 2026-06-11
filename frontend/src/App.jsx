@@ -3,8 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { api, supabase, toAppUser } from './api/client'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
+import ForgotPassword from './pages/ForgotPassword'
 import Login from './pages/Login'
 import Quotebook from './pages/Quotebook'
+import ResetPassword from './pages/ResetPassword'
 import Signup from './pages/Signup'
 import './App.css'
 
@@ -69,7 +71,7 @@ export default function App() {
   }
 
   if (loading) {
-    return <div className="loading">Loading...</div>
+    return <p className="loading">Loading…</p>
   }
 
   return (
@@ -79,6 +81,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login onLogin={setUser} />} />
           <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup onSignup={setUser} />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/"
             element={

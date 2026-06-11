@@ -1,0 +1,207 @@
+-- Quote moderation for owners/admins, and self-leave for collaborators
+
+CREATE OR REPLACE FUNCTION public.can_moderate_quote_block(p_block_id INTEGER)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = p_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    );
+$$;
+
+CREATE POLICY "Owners and admins can update quote blocks"
+ON quote_blocks FOR UPDATE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    )
+);
+
+CREATE POLICY "Owners and admins can delete quote blocks"
+ON quote_blocks FOR DELETE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quotebooks q
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE q.id = quote_blocks.quotebook_id
+          AND (
+              q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    )
+);
+
+CREATE POLICY "Moderators can delete utterances on quote blocks"
+ON utterances FOR DELETE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = utterances.quote_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    )
+);
+
+CREATE POLICY "Moderators can insert utterances"
+ON utterances FOR INSERT
+TO authenticated
+WITH CHECK (
+    EXISTS (
+        SELECT 1
+        FROM quote_blocks b
+        JOIN quotebooks q ON q.id = b.quotebook_id
+        LEFT JOIN quotebook_permissions p
+            ON p.quotebook_id = q.id AND p.user_id = auth.uid()
+        WHERE b.id = utterances.quote_block_id
+          AND (
+              b.user_id = auth.uid()
+              OR q.created_by = auth.uid()
+              OR p.role = 'admin'
+          )
+    )
+);
+
+CREATE OR REPLACE FUNCTION public.update_quote_entry(
+    p_block_id INTEGER,
+    p_month TEXT,
+    p_day_range TEXT,
+    p_year INTEGER,
+    p_lines JSONB
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    line JSONB;
+    idx INTEGER := 0;
+    quote_text TEXT;
+    author_text TEXT;
+BEGIN
+    IF NOT public.can_moderate_quote_block(p_block_id) THEN
+        RAISE EXCEPTION 'You do not have permission to edit this quote';
+    END IF;
+
+    IF p_lines IS NULL OR jsonb_array_length(p_lines) = 0 THEN
+        RAISE EXCEPTION 'At least one quote line is required';
+    END IF;
+
+    UPDATE quote_blocks
+    SET
+        month = NULLIF(p_month, ''),
+        day_range = NULLIF(p_day_range, ''),
+        year = p_year
+    WHERE id = p_block_id;
+
+    DELETE FROM utterances WHERE quote_block_id = p_block_id;
+
+    FOR line IN SELECT * FROM jsonb_array_elements(p_lines)
+    LOOP
+        quote_text := NULLIF(TRIM(line->>'quote'), '');
+        IF quote_text IS NULL THEN
+            CONTINUE;
+        END IF;
+
+        author_text := NULLIF(TRIM(line->>'author'), '');
+        IF author_text IS NULL THEN
+            author_text := 'Anonymous';
+        END IF;
+
+        INSERT INTO utterances (
+            quote_block_id,
+            quote,
+            author,
+            context,
+            context_position,
+            line_order
+        )
+        VALUES (
+            p_block_id,
+            quote_text,
+            author_text,
+            NULLIF(TRIM(line->>'context'), ''),
+            NULLIF(line->>'context_position', ''),
+            idx
+        );
+
+        idx := idx + 1;
+    END LOOP;
+
+    IF idx = 0 THEN
+        RAISE EXCEPTION 'At least one quote line is required';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.leave_quotebook(p_quotebook_id INTEGER)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM quotebooks
+        WHERE id = p_quotebook_id AND created_by = auth.uid()
+    ) THEN
+        RAISE EXCEPTION 'Owners cannot leave their own quotebook. Delete it instead.';
+    END IF;
+
+    DELETE FROM quotebook_permissions
+    WHERE quotebook_id = p_quotebook_id AND user_id = auth.uid();
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'You do not have access to this quotebook';
+    END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.can_moderate_quote_block(INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.leave_quotebook(INTEGER) TO authenticated;

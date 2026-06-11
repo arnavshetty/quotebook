@@ -1,25 +1,23 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 
-export default function Login({ onLogin }) {
-  const navigate = useNavigate()
-  const location = useLocation()
+export default function ForgotPassword() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [message, setMessage] = useState(location.state?.message || '')
+  const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
+    setMessage('')
     setSubmitting(true)
 
     try {
-      const data = await api.login({ email, password })
-      onLogin(data.user)
-      navigate('/')
+      const data = await api.resetPassword(email)
+      setMessage(data.message)
+      setEmail('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -30,8 +28,10 @@ export default function Login({ onLogin }) {
   return (
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Welcome back</h2>
-        <p className="auth-tagline">Sign in to your quotebooks</p>
+        <h2>Reset password</h2>
+        <p className="auth-tagline">
+          Enter your email and we&apos;ll send a link to choose a new password.
+        </p>
         {error && <p className="error">{error}</p>}
         {message && <p className="success">{message}</p>}
         <div className="form-group">
@@ -44,22 +44,11 @@ export default function Login({ onLogin }) {
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Link to="/forgot-password" className="auth-inline-link">Forgot password?</Link>
-        </div>
         <button type="submit" disabled={submitting}>
-          {submitting ? 'Logging in...' : 'Log in'}
+          {submitting ? 'Sending…' : 'Send reset link'}
         </button>
         <p className="auth-switch">
-          No account? <Link to="/signup">Sign up</Link>
+          <Link to="/login">Back to log in</Link>
         </p>
       </form>
     </div>
