@@ -1,23 +1,25 @@
 import { Link } from 'react-router-dom'
+import Logo from './Logo'
 
 export default function Header({ user, onLogout }) {
   return (
     <header className="header">
-      <h1>
-        <Link to="/">Quotebook</Link>
-      </h1>
+      <Link to="/" className="brand">
+        <Logo size={32} />
+        <span className="brand-name">Quotebook</span>
+      </Link>
       <nav>
         {user ? (
           <>
-            <span className="nav-user">Hi, {user.username}</span>
+            <span className="nav-user">{user.username}</span>
             <button type="button" className="nav-btn" onClick={onLogout}>
-              Log Out
+              Log out
             </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="nav-link">Log In</Link>
-            <Link to="/signup" className="nav-link">Sign Up</Link>
+            <Link to="/login" className="nav-link">Log in</Link>
+            <Link to="/signup" className="nav-link">Sign up</Link>
           </>
         )}
       </nav>

@@ -55,6 +55,21 @@ export const api = {
     return { user: await toAppUser(data.user) }
   },
 
+  resetPassword: async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw new Error(error.message)
+    return { message: 'If that email is registered, a reset link is on its way.' }
+  },
+
+  updatePassword: async (password) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw new Error(error.message)
+    await supabase.auth.signOut()
+    return { message: 'Password updated.' }
+  },
+
   logout: async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw new Error(error.message)
@@ -74,21 +89,13 @@ export const api = {
   },
 
   createQuotebook: async ({ title, description }) => {
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) throw new Error('You must be logged in to create a quotebook.')
-
-    const { data, error } = await supabase
-      .from('quotebooks')
-      .insert({
-        title: title.trim(),
-        description: description?.trim() || null,
-        created_by: user.id,
-      })
-      .select()
-      .single()
+    const { error } = await supabase.rpc('create_quotebook', {
+      p_title: title.trim(),
+      p_description: description?.trim() || null,
+    })
 
     if (error) throw new Error(error.message)
-    return { quotebook: data }
+    return api.getQuotebooks()
   },
 
   deleteQuotebook: async (quotebookId) => {
@@ -156,6 +163,71 @@ export const api = {
     return api.getQuotes(quotebookId)
   },
 
+  updateQuotebook: async (quotebookId, { title, description }) => {
+    const { data, error } = await supabase
+      .from('quotebooks')
+      .update({
+        title: title.trim(),
+        description: description?.trim() || null,
+      })
+      .eq('id', quotebookId)
+      .select('id, title, description, created_by, created_at')
+      .single()
+
+    if (error) throw new Error(error.message)
+    return { quotebook: data }
+  },
+
+  getCollaborators: async (quotebookId) => {
+    const { data, error } = await supabase.rpc('get_quotebook_collaborators', {
+      p_quotebook_id: quotebookId,
+    })
+
+    if (error) throw new Error(error.message)
+    return { collaborators: data || [] }
+  },
+
+  updateCollaboratorRole: async (quotebookId, userId, role) => {
+    const { error } = await supabase.rpc('update_quotebook_collaborator_role', {
+      p_quotebook_id: quotebookId,
+      p_user_id: userId,
+      p_role: role,
+    })
+
+    if (error) throw new Error(error.message)
+    return { message: 'Role updated.' }
+  },
+
+  removeCollaborator: async (quotebookId, userId) => {
+    const { error } = await supabase.rpc('remove_quotebook_collaborator', {
+      p_quotebook_id: quotebookId,
+      p_user_id: userId,
+    })
+
+    if (error) throw new Error(error.message)
+    return { message: 'Collaborator removed.' }
+  },
+
+  leaveQuotebook: async (quotebookId) => {
+    const { error } = await supabase.rpc('leave_quotebook', {
+      p_quotebook_id: quotebookId,
+    })
+
+    if (error) throw new Error(error.message)
+    return { message: 'Left quotebook.' }
+  },
+
+  renameSpeaker: async (quotebookId, oldName, newName) => {
+    const { data, error } = await supabase.rpc('rename_speaker_in_quotebook', {
+      p_quotebook_id: quotebookId,
+      p_old_name: oldName,
+      p_new_name: newName,
+    })
+
+    if (error) throw new Error(error.message)
+    return { updatedCount: data || 0 }
+  },
+
   shareQuotebook: async (quotebookId, { email, role }) => {
     const { error } = await supabase.rpc('share_quotebook_with_email', {
       p_quotebook_id: quotebookId,
@@ -165,6 +237,36 @@ export const api = {
 
     if (error) throw new Error(error.message)
     return { message: `Successfully shared with ${email}.` }
+  },
+
+  updateQuote: async (blockId, { month, day_range, year, lines }) => {
+    const payload = (lines || [])
+      .map((line) => ({
+        quote: (line.quote || '').trim(),
+        author: (line.author || '').trim(),
+        context: (line.context || '').trim(),
+        context_position: line.context_position || '',
+      }))
+      .filter((line) => line.quote)
+
+    const { error } = await supabase.rpc('update_quote_entry', {
+      p_block_id: blockId,
+      p_month: month || '',
+      p_day_range: day_range || '',
+      p_year: year ? Number(year) : null,
+      p_lines: payload,
+    })
+
+    if (error) throw new Error(error.message)
+
+    const { data: block } = await supabase
+      .from('quote_blocks')
+      .select('quotebook_id')
+      .eq('id', blockId)
+      .single()
+
+    if (!block) throw new Error('Quote not found after update.')
+    return api.getQuotes(block.quotebook_id)
   },
 
   deleteQuote: async (blockId) => {
