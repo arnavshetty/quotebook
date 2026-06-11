@@ -1,6 +1,8 @@
+import { ANONYMOUS_SPEAKER } from './quoteSort'
+
 export function formatQuoteForCopy(quote) {
   const lineTexts = (quote.lines || []).map((line) => {
-    const speaker = line.author?.trim() || 'Anonymous'
+    const speaker = line.author?.trim() || ANONYMOUS_SPEAKER
     let text = `"${line.quote}" — ${speaker}`
 
     if (line.context?.trim()) {

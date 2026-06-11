@@ -1,6 +1,6 @@
 import { sortQuotesForBookView } from './bookLayout'
 import { formatQuoteForCopy } from './formatQuote'
-import { formatQuoteDate, getPrimarySpeaker } from './quoteSort'
+import { ANONYMOUS_SPEAKER, formatQuoteDate, getPrimarySpeaker } from './quoteSort'
 
 function slugifyFilename(title) {
   const slug = (title || 'quotebook')
@@ -15,7 +15,7 @@ function getSortedQuotes(quotes, bookSort) {
 }
 
 function formatLineMarkdown(line) {
-  const speaker = line.author?.trim() || 'Anonymous'
+  const speaker = line.author?.trim() || ANONYMOUS_SPEAKER
   let text = `> “${line.quote}” — *${speaker}*`
 
   if (line.context?.trim()) {

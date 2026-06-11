@@ -9,7 +9,6 @@ export default function SpeakerLeaderboard({
   onRename,
   renaming,
   message,
-  hideHeader = false,
   activeSpeaker = '',
   onSpeakerSelect,
 }) {
@@ -57,19 +56,6 @@ export default function SpeakerLeaderboard({
 
   return (
     <div className="speaker-leaderboard" aria-label="Quotes per speaker">
-      {!hideHeader && (
-        <div className="speaker-leaderboard-header">
-          <h3>Speakers</h3>
-          <p className="speaker-leaderboard-hint">
-            {activeSpeaker && onSpeakerSelect
-              ? `Showing quotes by ${activeSpeaker} — click again to clear`
-              : onSpeakerSelect
-                ? 'Ranked by quote count · click to filter'
-                : 'Ranked by quote count'}
-          </p>
-        </div>
-      )}
-
       <ol className="speaker-leaderboard-list">
         {entries.map(({ speaker, count }, index) => {
           const color = getSpeakerBorderColor(speaker, speakerColorMap)

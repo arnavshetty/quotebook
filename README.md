@@ -30,7 +30,9 @@ export SUPABASE_DB_PASSWORD='your-db-password'
 supabase db push
 ```
 
-Or run the SQL files in `supabase/migrations/` from the Supabase SQL editor **in filename order**.
+Or run `supabase/migrations/20260610000000_initial_schema.sql` from the Supabase SQL editor on a **new** project.
+
+**Note:** If your database already ran the older incremental migrations, do not re-apply the squashed file — use `supabase db push` only on fresh projects or reset your remote DB first.
 
 3. **Configure environment**
 

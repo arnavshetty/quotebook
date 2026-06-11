@@ -1,3 +1,5 @@
+import { ANONYMOUS_SPEAKER } from './quoteSort'
+
 export const SPEAKER_BORDER_COLORS = [
   '#c0392b',
   '#1e8449',
@@ -14,7 +16,7 @@ export const SPEAKER_BORDER_COLORS = [
 const FALLBACK_COLOR = '#78716c'
 
 export function getLineSpeaker(line) {
-  return (line?.author || '').trim() || 'Anonymous'
+  return (line?.author || '').trim() || ANONYMOUS_SPEAKER
 }
 
 export function buildSpeakerColorMap(speakers) {

@@ -127,7 +127,6 @@ export default function QuotebookSidebar({
                 onRename={onRename}
                 renaming={renamingSpeaker}
                 message={renameMessage}
-                hideHeader
                 activeSpeaker={activeSpeaker}
                 onSpeakerSelect={onSpeakerSelect}
               />
