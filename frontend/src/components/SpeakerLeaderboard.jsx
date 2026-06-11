@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Check, Pencil, X } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { getSpeakerBorderColor } from '../lib/speakerColors'
+import InlineEditActions from './InlineEditActions'
 
 export default function SpeakerLeaderboard({
   entries,
@@ -102,24 +103,15 @@ export default function SpeakerLeaderboard({
                     }}
                   />
                   <div className="speaker-leaderboard-edit-actions">
-                    <button
-                      type="button"
-                      className="icon-action-btn icon-action-btn--confirm"
-                      onClick={saveEdit}
-                      disabled={renaming || !newName.trim()}
-                      aria-label="Save speaker name"
-                    >
-                      <Check size={14} strokeWidth={2} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-action-btn icon-action-btn--discard"
-                      onClick={cancelEdit}
-                      disabled={renaming}
-                      aria-label="Cancel rename"
-                    >
-                      <X size={14} strokeWidth={2} aria-hidden="true" />
-                    </button>
+                    <InlineEditActions
+                      editing
+                      onSave={saveEdit}
+                      onCancel={cancelEdit}
+                      saving={renaming}
+                      saveDisabled={!newName.trim()}
+                      saveLabel="Save speaker name"
+                      cancelLabel="Cancel rename"
+                    />
                   </div>
                 </div>
               ) : (

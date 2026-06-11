@@ -62,7 +62,7 @@ If email confirmation is enabled in Supabase, new users must confirm their email
 
 ### 1. Database
 
-Apply every migration in `supabase/migrations/` to your remote project:
+Apply the migration in `supabase/migrations/` to your remote project (fresh DBs only if squashed):
 
 ```bash
 supabase link --project-ref your-project-ref

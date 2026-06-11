@@ -1,3 +1,5 @@
+import QuoteLine from './QuoteLine'
+
 export function BookHeading({ level, text }) {
   if (level === 1) return <h1 className="book-heading book-heading--1">{text}</h1>
   if (level === 2) return <h2 className="book-heading book-heading--2">{text}</h2>
@@ -9,17 +11,7 @@ export function BookQuote({ quote }) {
   return (
     <article className="book-quote">
       {quote.lines?.map((line, index) => (
-        <blockquote key={index} className="book-quote-line">
-          {line.context && line.context_position === 'Before' && (
-            <span className="context-text">[{line.context}] </span>
-          )}
-          <span className="book-quote-text">&ldquo;{line.quote}&rdquo;</span>
-          {' '}
-          <span className="book-quote-author">— {line.author}</span>
-          {line.context && line.context_position === 'After' && (
-            <span className="context-text"> [{line.context}]</span>
-          )}
-        </blockquote>
+        <QuoteLine key={index} line={line} variant="book" />
       ))}
     </article>
   )
