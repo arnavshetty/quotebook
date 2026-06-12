@@ -264,6 +264,10 @@
   z-index: 0;
 }
 
+.book-shell--single-page .book-measure-probe {
+  width: calc(100% - 1.3rem);
+}
+
 .book-measure-groups {
   position: fixed;
   top: 0;
@@ -314,6 +318,10 @@
   box-shadow:
     0 2px 8px rgba(26, 22, 18, 0.08),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.book-spread--single {
+  grid-template-columns: 1fr;
 }
 
 .book-spread--turn-forward {

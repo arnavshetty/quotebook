@@ -237,6 +237,50 @@ export function packSpreadsByHeight(groups, groupHeights, pageCapacityPx) {
   return spreads
 }
 
+export function packPagesByHeight(groups, groupHeights, pageCapacityPx) {
+  if (groups.length === 0) return []
+
+  const capacity = Math.max(pageCapacityPx - 8, 120)
+  const pages = []
+  let current = []
+  let used = 0
+
+  const startNewPage = () => {
+    if (current.length > 0) {
+      pages.push(current)
+    }
+    current = []
+    used = 0
+  }
+
+  for (let index = 0; index < groups.length; index += 1) {
+    const group = groups[index]
+    const height = Math.max(groupHeights[index] || 0, 1)
+    let gap = endsWithQuote(current) ? QUOTE_BLOCK_GAP_PX : 0
+
+    if (used + gap + height > capacity && current.length > 0) {
+      startNewPage()
+      gap = 0
+    }
+
+    if (gap + height > capacity && current.length > 0) {
+      startNewPage()
+      gap = 0
+    }
+
+    for (const item of group.items) {
+      current.push(item)
+    }
+    used += gap + height
+  }
+
+  if (current.length > 0) {
+    pages.push(current)
+  }
+
+  return pages
+}
+
 export function buildBookSpreads(quotes, mode = 'date', pageCapacityPx, groupHeights) {
   const groups = buildBookGroups(quotes, mode)
 
@@ -245,4 +289,14 @@ export function buildBookSpreads(quotes, mode = 'date', pageCapacityPx, groupHei
   }
 
   return packSpreadsByHeight(groups, groupHeights, pageCapacityPx)
+}
+
+export function buildBookPages(quotes, mode = 'date', pageCapacityPx, groupHeights) {
+  const groups = buildBookGroups(quotes, mode)
+
+  if (!pageCapacityPx || !groupHeights || groupHeights.length !== groups.length) {
+    return []
+  }
+
+  return packPagesByHeight(groups, groupHeights, pageCapacityPx)
 }
