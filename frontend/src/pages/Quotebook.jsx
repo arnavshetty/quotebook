@@ -323,13 +323,14 @@ export default function Quotebook({ user }) {
                   }
                 >
                   <span className="toolbar-field-label"># of Quotes</span>
-                  <div className="quotes-display-count-value">
-                    <span className="quotes-display-count-number">
-                      {quotes.length === 0 ? 0 : isFiltered ? displayedQuotes.length : quotes.length}
+                  <div className="toolbar-control quotes-display-count-bar" aria-hidden="true">
+                    <span className="quotes-display-count-text">
+                      {quotes.length === 0
+                        ? '0'
+                        : isFiltered
+                          ? `${displayedQuotes.length} of ${quotes.length}`
+                          : quotes.length}
                     </span>
-                    {isFiltered && quotes.length > 0 && (
-                      <span className="quotes-display-count-filtered">of {quotes.length}</span>
-                    )}
                   </div>
                 </div>
 
@@ -351,7 +352,7 @@ export default function Quotebook({ user }) {
                     <div className="toolbar-selects">
                       <label className="toolbar-field">
                         <span className="toolbar-field-label">Sort</span>
-                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                        <select className="toolbar-control" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                           <option value="date-desc">Newest</option>
                           <option value="date-asc">Oldest</option>
                           <option value="speaker-asc">Speaker A–Z</option>
@@ -361,6 +362,7 @@ export default function Quotebook({ user }) {
                       <label className="toolbar-field">
                         <span className="toolbar-field-label">Speaker</span>
                         <select
+                          className="toolbar-control"
                           value={speakerFilter}
                           onChange={(e) => setSpeakerFilter(e.target.value)}
                         >

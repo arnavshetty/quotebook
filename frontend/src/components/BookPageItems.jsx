@@ -19,7 +19,7 @@ export function BookQuote({ quote }) {
 
 export function BookPageContent({ items }) {
   if (!items.length) {
-    return <div className="book-page-body book-page-body--blank" aria-hidden="true" />
+    return <div className="book-page-body book-page-body--empty" aria-hidden="true" />
   }
 
   return (

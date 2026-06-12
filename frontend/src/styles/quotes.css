@@ -15,34 +15,36 @@
   flex-shrink: 0;
 }
 
-.quotes-display-count-value {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  min-width: 6.75rem;
+.quote-toolbar .toolbar-control {
+  box-sizing: border-box;
   height: 2.45rem;
   min-height: 2.45rem;
+  max-height: 2.45rem;
   padding: 0 0.75rem;
-  box-sizing: border-box;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: var(--surface-muted);
+  background-color: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 2.45rem;
+  color: var(--ink);
 }
 
-.quotes-display-count-number {
+.quotes-display-count-bar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 6.75rem;
+  width: auto;
+  justify-content: flex-start;
+}
+
+.quotes-display-count-text {
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-}
-
-.quotes-display-count-filtered {
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--ink-faint);
   white-space: nowrap;
 }
 
@@ -86,6 +88,7 @@
   min-width: 0;
   height: 2.45rem;
   min-height: 2.45rem;
+  max-height: 2.45rem;
   box-sizing: border-box;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
@@ -94,6 +97,7 @@
 }
 
 .search-bar-field {
+  align-self: stretch;
   border: none;
   border-right: 1px solid var(--border);
   border-radius: 0;
@@ -109,12 +113,14 @@
   color: var(--ink-muted);
   font-size: 0.85rem;
   font-weight: 600;
-  line-height: 2.45rem;
+  line-height: 1;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
   box-shadow: none;
-  height: 2.45rem;
+  height: auto;
+  min-height: 0;
+  margin: 0;
   box-sizing: border-box;
 }
 
@@ -133,9 +139,10 @@
 .search-bar-input-wrap {
   display: flex;
   align-items: center;
+  align-self: stretch;
   flex: 1;
   min-width: 0;
-  height: 100%;
+  min-height: 0;
   gap: 0.15rem;
   padding-right: 0.35rem;
 }
@@ -143,13 +150,15 @@
 .search-bar-input {
   flex: 1;
   min-width: 0;
-  height: 2.45rem;
+  height: 100%;
+  min-height: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   padding: 0 0.35rem 0 0.75rem;
   box-sizing: border-box;
-  line-height: 2.45rem;
+  font-size: 0.85rem;
+  line-height: 1;
   margin: 0;
 }
 
@@ -165,21 +174,44 @@
   background: transparent;
 }
 
+.quote-toolbar .search-bar select.search-bar-field,
+.quote-toolbar .search-bar .search-bar-input {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.quote-toolbar .search-bar select.search-bar-field:hover,
+.quote-toolbar .search-bar select.search-bar-field:focus,
+.quote-toolbar .search-bar .search-bar-input:hover,
+.quote-toolbar .search-bar .search-bar-input:focus {
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+
 .toolbar-selects {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
   flex-shrink: 0;
 }
 
-.toolbar-selects .toolbar-field select {
+.quote-toolbar .toolbar-field select.toolbar-control {
   min-width: 6.75rem;
-  height: 2.45rem;
-  min-height: 2.45rem;
-  padding: 0 0.75rem;
-  font-size: 0.85rem;
-  line-height: 2.45rem;
-  box-sizing: border-box;
+  padding-right: 2rem;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b635a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.quote-toolbar .toolbar-field select.toolbar-control:hover,
+.quote-toolbar .toolbar-field select.toolbar-control:focus {
+  background-color: var(--surface);
 }
 
 .quote-card {

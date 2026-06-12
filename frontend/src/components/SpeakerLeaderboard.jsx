@@ -123,7 +123,7 @@ export default function SpeakerLeaderboard({
                       {canRename && (
                         <button
                           type="button"
-                          className="speaker-leaderboard-edit-btn"
+                          className="icon-action-btn icon-action-btn--compact icon-action-btn--reveal"
                           onClick={(event) => startEdit(speaker, event)}
                           aria-label={`Rename ${speaker}`}
                         >

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { LogOut, Pencil } from 'lucide-react'
 import { api } from '../api/client'
 import CollapsibleSection from './CollapsibleSection'
+import RoleBadgeSelect from './RoleBadgeSelect'
 import SpeakerLeaderboard from './SpeakerLeaderboard'
 
 const ROLES = ['viewer', 'contributor', 'admin']
@@ -32,8 +33,17 @@ export default function QuotebookSidebar({
   const [speakersOpen, setSpeakersOpen] = useState(true)
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(true)
   const [accessOpen, setAccessOpen] = useState(true)
+  const [editingRoleUserId, setEditingRoleUserId] = useState(null)
+  const roleSelectRef = useRef(null)
 
+  const canManageRoles = userRole === 'owner' || userRole === 'admin'
   const showAccess = canLeave && userRole && userRole !== 'owner'
+
+  useEffect(() => {
+    if (!editingRoleUserId || !roleSelectRef.current) return
+    roleSelectRef.current.focus()
+    roleSelectRef.current.showPicker?.()
+  }, [editingRoleUserId])
 
   const loadCollaborators = () =>
     api.getCollaborators(quotebookId)
@@ -65,6 +75,7 @@ export default function QuotebookSidebar({
   }
 
   const handleRoleChange = async (userId, role) => {
+    setEditingRoleUserId(null)
     setError('')
     setMessage('')
     try {
@@ -136,40 +147,67 @@ export default function QuotebookSidebar({
                   <p className="sidebar-hint">Not shared with anyone yet.</p>
                 ) : (
                   <ul className="collaborator-list">
-                    {collaborators.map((collaborator) => (
-                      <li key={collaborator.user_id} className="collaborator-item">
-                        <div className="collaborator-info">
-                          <div className="collaborator-name-row">
-                            <span className="collaborator-name">
-                              {collaborator.username || collaborator.email}
-                            </span>
-                            <span className={`badge badge--${collaborator.role}`}>{collaborator.role}</span>
+                    {collaborators.map((collaborator) => {
+                      const label = collaborator.username || collaborator.email
+                      const isEditingRole = editingRoleUserId === collaborator.user_id
+
+                      return (
+                        <li key={collaborator.user_id} className="collaborator-item">
+                          <div className="collaborator-info">
+                            <div className="collaborator-name-wrap">
+                              <span className="collaborator-name">{label}</span>
+                              <div className="collaborator-role-wrap">
+                                {isEditingRole ? (
+                                  <select
+                                    ref={roleSelectRef}
+                                    className={`collaborator-role-select badge badge--${collaborator.role}`}
+                                    value={collaborator.role}
+                                    onChange={(e) => handleRoleChange(collaborator.user_id, e.target.value)}
+                                    onBlur={() => setEditingRoleUserId(null)}
+                                    aria-label={`Role for ${label}`}
+                                  >
+                                    {ROLES.map((role) => (
+                                      <option key={role} value={role}>{role}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className={`badge badge--${collaborator.role}`}>
+                                    {collaborator.role}
+                                  </span>
+                                )}
+                                {canManageRoles && !isEditingRole && (
+                                  <button
+                                    type="button"
+                                    className="icon-action-btn icon-action-btn--compact icon-action-btn--reveal"
+                                    onClick={() => setEditingRoleUserId(collaborator.user_id)}
+                                    aria-label={`Change role for ${label}`}
+                                  >
+                                    <Pencil size={11} strokeWidth={2} aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {(collaborator.username || canManageRoles) && (
+                              <div className="collaborator-meta-row">
+                                {collaborator.username && (
+                                  <span className="collaborator-email">{collaborator.email}</span>
+                                )}
+                                {canManageRoles && (
+                                  <button
+                                    type="button"
+                                    className="text-btn text-btn--danger"
+                                    onClick={() => handleRemove(collaborator)}
+                                    aria-label={`Remove ${label}`}
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {collaborator.username && (
-                            <span className="collaborator-email">{collaborator.email}</span>
-                          )}
-                        </div>
-                        <div className="collaborator-actions">
-                          <select
-                            value={collaborator.role}
-                            onChange={(e) => handleRoleChange(collaborator.user_id, e.target.value)}
-                            aria-label={`Role for ${collaborator.username || collaborator.email}`}
-                          >
-                            {ROLES.map((role) => (
-                              <option key={role} value={role}>{role}</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="text-btn text-btn--danger"
-                            onClick={() => handleRemove(collaborator)}
-                            aria-label={`Remove ${collaborator.username || collaborator.email}`}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </li>
-                    ))}
+                        </li>
+                      )
+                    })}
                   </ul>
                 )}
 
@@ -187,15 +225,12 @@ export default function QuotebookSidebar({
                   </div>
                   <div className="form-group">
                     <label htmlFor="sidebar-share-role">Role</label>
-                    <select
+                    <RoleBadgeSelect
                       id="sidebar-share-role"
                       value={shareRole}
-                      onChange={(e) => setShareRole(e.target.value)}
-                    >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
+                      onChange={setShareRole}
+                      options={ROLES}
+                    />
                   </div>
                   <button type="submit" disabled={sharing}>
                     {sharing ? 'Sharing…' : 'Share'}
