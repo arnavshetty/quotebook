@@ -1,0 +1,209 @@
+/* ── Responsive ── */
+
+@media (max-width: 900px) {
+  .main:has(.quotebook-page) {
+    height: auto;
+    overflow: visible;
+    padding-bottom: 2rem;
+  }
+
+  .quotebook-page:not(.quotebook-page--read),
+  .quotebook-page--read {
+    display: block;
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .quotebook-layout:not(.quotebook-layout--read) {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+    align-items: start;
+    grid-template-rows: none;
+    padding-bottom: 1.25rem;
+  }
+
+  .quotebook-layout:not(.quotebook-layout--read) > .quotebook-main,
+  .quotebook-layout:not(.quotebook-layout--read) > .quotebook-sidebar {
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .quotebook-chrome {
+    grid-template-columns: 1fr;
+  }
+
+  .quotebook-chrome-actions {
+    padding-top: 0;
+  }
+
+  .quotebook-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quotebook-layout--read {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .quotebook-layout--read.quotebook-layout--has-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .quotebook-layout--read .quotebook-main {
+    order: 0;
+    display: block;
+    overflow: visible;
+  }
+
+  .quotebook-layout--read .quotebook-sidebar {
+    order: 1;
+  }
+
+  .quotebook-main {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .book-shell {
+    height: auto;
+    min-height: 480px;
+  }
+
+  .book-spread {
+    min-height: 460px;
+    height: auto;
+  }
+
+  .quotebook-sidebar {
+    position: static;
+    order: -1;
+    overflow: visible;
+    max-height: none;
+  }
+
+  .quotebook-layout--read .quotebook-sidebar {
+    order: 1;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-sort {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .quotebook-layout--read.quotebook-layout--has-sidebar {
+    grid-template-columns: minmax(0, 1fr) min(260px, 34vw);
+  }
+
+  .quotebook-layout--read.quotebook-layout--has-sidebar .quotebook-sidebar {
+    order: unset;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 6rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .main {
+    padding: 5rem 1rem 2rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.85rem;
+  }
+
+  .header {
+    padding: 0 1rem;
+  }
+
+  .nav-user {
+    display: none;
+  }
+
+  .create-quotebook-form button,
+  .share-form button {
+    width: 100%;
+  }
+
+  .quotes-display-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .quotes-display-count-bar {
+    height: 2.45rem;
+    min-height: 2.45rem;
+  }
+
+  .quote-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  .toolbar-selects {
+    width: 100%;
+  }
+
+  .toolbar-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toolbar-field select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .book-spread {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .book-measure-probe {
+    width: calc(100% - 1.3rem);
+  }
+
+  .book-gutter {
+    display: none;
+  }
+
+  .book-page {
+    padding: 1.15rem 1.1rem 0.9rem;
+    min-height: 320px;
+  }
+
+  .book-page--right {
+    border-top: 1px solid var(--border);
+    box-shadow: inset 0 8px 16px rgba(26, 22, 18, 0.04);
+  }
+
+  .book-quote-line {
+    font-size: 1rem;
+  }
+
+  .book-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .book-nav-status {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .quotebook-toolbar {
+    gap: 0.5rem;
+  }
+}

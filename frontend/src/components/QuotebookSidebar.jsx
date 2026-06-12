@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, LogOut, Pencil } from 'lucide-react'
+import { LogOut, Pencil } from 'lucide-react'
 import { api } from '../api/client'
+import CollapsibleSection from './CollapsibleSection'
 import RoleBadgeSelect from './RoleBadgeSelect'
 import SpeakerLeaderboard from './SpeakerLeaderboard'
 
@@ -107,69 +108,39 @@ export default function QuotebookSidebar({
   return (
     <aside className="quotebook-sidebar">
       {showSpeakers && (
-        <section
-          className={`sidebar-section sidebar-section--collapsible${speakersOpen ? '' : ' is-collapsed'}`}
+        <CollapsibleSection
+          open={speakersOpen}
+          onToggle={() => setSpeakersOpen((open) => !open)}
+          title="Speakers"
+          hint={
+            activeSpeaker && onSpeakerSelect
+              ? `Filtering · ${activeSpeaker}`
+              : onSpeakerSelect
+                ? 'Ranked by count · click to filter'
+                : 'Ranked by count'
+          }
         >
-          <button
-            type="button"
-            className="sidebar-section-toggle"
-            onClick={() => setSpeakersOpen((open) => !open)}
-            aria-expanded={speakersOpen}
-          >
-            <span className="sidebar-section-toggle-text">
-              <span className="sidebar-section-toggle-title">Speakers</span>
-              <span className="sidebar-section-toggle-hint">
-                {activeSpeaker && onSpeakerSelect
-                  ? `Filtering · ${activeSpeaker}`
-                  : onSpeakerSelect
-                    ? 'Ranked by count · click to filter'
-                    : 'Ranked by count'}
-              </span>
-            </span>
-            <ChevronDown size={16} strokeWidth={2} className="sidebar-section-chevron" aria-hidden="true" />
-          </button>
-
-          <div className="collapsible-body">
-            <div className="collapsible-body-inner">
-              <SpeakerLeaderboard
-                entries={speakerLeaderboard}
-                speakerColorMap={speakerColorMap}
-                canRename={canRename}
-                onRename={onRename}
-                renaming={renamingSpeaker}
-                message={renameMessage}
-                hideHeader
-                activeSpeaker={activeSpeaker}
-                onSpeakerSelect={onSpeakerSelect}
-              />
-            </div>
-          </div>
-        </section>
+          <SpeakerLeaderboard
+            entries={speakerLeaderboard}
+            speakerColorMap={speakerColorMap}
+            canRename={canRename}
+            onRename={onRename}
+            renaming={renamingSpeaker}
+            message={renameMessage}
+            activeSpeaker={activeSpeaker}
+            onSpeakerSelect={onSpeakerSelect}
+          />
+        </CollapsibleSection>
       )}
 
       {showCollaborators && (
-        <section
-          className={`sidebar-section sidebar-section--collapsible${collaboratorsOpen ? '' : ' is-collapsed'}`}
+        <CollapsibleSection
+          open={collaboratorsOpen}
+          onToggle={() => setCollaboratorsOpen((open) => !open)}
+          title="Collaborators"
+          hint={loadingCollaborators ? 'Loading…' : `${collaborators.length} shared`}
+          innerClassName="sidebar-section-body"
         >
-            <button
-              type="button"
-              className="sidebar-section-toggle"
-              onClick={() => setCollaboratorsOpen((open) => !open)}
-              aria-expanded={collaboratorsOpen}
-            >
-              <span className="sidebar-section-toggle-text">
-                <span className="sidebar-section-toggle-title">Collaborators</span>
-                <span className="sidebar-section-toggle-hint">
-                  {loadingCollaborators
-                    ? 'Loading…'
-                    : `${collaborators.length} shared`}
-                </span>
-              </span>
-              <ChevronDown size={16} strokeWidth={2} className="sidebar-section-chevron" aria-hidden="true" />
-            </button>
-
-            <div className="collapsible-body">
-              <div className="collapsible-body-inner sidebar-section-body">
                 {loadingCollaborators ? (
                   <p className="sidebar-hint">Loading…</p>
                 ) : collaborators.length === 0 ? (
@@ -268,52 +239,35 @@ export default function QuotebookSidebar({
                 <p className="sidebar-hint">
                   They must already have an account. The quotebook appears on their dashboard — no invite email is sent.
                 </p>
-              </div>
-            </div>
-          </section>
+        </CollapsibleSection>
       )}
 
       {showAccess && (
         <>
           {(showSpeakers || showCollaborators) && <hr className="sidebar-divider sidebar-divider--visible" />}
 
-          <section
-            className={`sidebar-section sidebar-section--collapsible${accessOpen ? '' : ' is-collapsed'}`}
+          <CollapsibleSection
+            open={accessOpen}
+            onToggle={() => setAccessOpen((open) => !open)}
+            title="Your access"
+            hint={`${userRole} · leave anytime`}
+            innerClassName="sidebar-section-body sidebar-access-body"
           >
-            <button
-              type="button"
-              className="sidebar-section-toggle"
-              onClick={() => setAccessOpen((open) => !open)}
-              aria-expanded={accessOpen}
-            >
-              <span className="sidebar-section-toggle-text">
-                <span className="sidebar-section-toggle-title">Your access</span>
-                <span className="sidebar-section-toggle-hint">
-                  {userRole} · leave anytime
-                </span>
-              </span>
-              <ChevronDown size={16} strokeWidth={2} className="sidebar-section-chevron" aria-hidden="true" />
-            </button>
-
-            <div className="collapsible-body">
-              <div className="collapsible-body-inner sidebar-section-body sidebar-access-body">
-                <div className="sidebar-access-card">
-                  <p className="sidebar-hint sidebar-access-hint">
-                    You were invited to this quotebook. Leaving removes it from your dashboard.
-                  </p>
-                  <button
-                    type="button"
-                    className="sidebar-leave-btn"
-                    onClick={onLeave}
-                    disabled={leaving}
-                  >
-                    <LogOut size={14} strokeWidth={2} aria-hidden="true" />
-                    {leaving ? 'Leaving…' : 'Leave quotebook'}
-                  </button>
-                </div>
-              </div>
+            <div className="sidebar-access-card">
+              <p className="sidebar-hint sidebar-access-hint">
+                You were invited to this quotebook. Leaving removes it from your dashboard.
+              </p>
+              <button
+                type="button"
+                className="sidebar-leave-btn"
+                onClick={onLeave}
+                disabled={leaving}
+              >
+                <LogOut size={14} strokeWidth={2} aria-hidden="true" />
+                {leaving ? 'Leaving…' : 'Leave quotebook'}
+              </button>
             </div>
-          </section>
+          </CollapsibleSection>
         </>
       )}
 

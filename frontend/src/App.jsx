@@ -8,7 +8,7 @@ import Login from './pages/Login'
 import Quotebook from './pages/Quotebook'
 import ResetPassword from './pages/ResetPassword'
 import Signup from './pages/Signup'
-import './App.css'
+import './styles/index.css'
 
 function ProtectedRoute({ user, children }) {
   if (!user) {
