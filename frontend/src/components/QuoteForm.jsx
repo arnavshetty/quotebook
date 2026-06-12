@@ -114,7 +114,7 @@ export default function QuoteForm({
                 id={fieldId(`context-${index}`)}
                 value={line.context}
                 onChange={(e) => updateLine(index, 'context', e.target.value)}
-                placeholder="monologuing to the audience"
+                placeholder="Scene, setting, etc."
               />
             </div>
             <div className="form-group">

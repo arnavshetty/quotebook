@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { buildBookGroups, buildBookSpreads } from '../lib/bookLayout'
+import { buildBookGroups, buildBookPages, buildBookSpreads } from '../lib/bookLayout'
 
 function readPageContentHeight(probeEl) {
   const body = probeEl.querySelector('.book-page-body')
@@ -28,7 +28,7 @@ function readGroupHeights(rootEl, groupCount) {
   return heights
 }
 
-export default function useMeasuredBookSpreads(quotes, bookSort) {
+export default function useMeasuredBookSpreads(quotes, bookSort, singlePage = false) {
   const shellRef = useRef(null)
   const probeRef = useRef(null)
   const groupsMeasureRef = useRef(null)
@@ -85,14 +85,21 @@ export default function useMeasuredBookSpreads(quotes, bookSort) {
   }, [groups, pageCapacityPx, columnWidthPx, quotes, bookSort])
 
   const spreads = useMemo(
-    () => buildBookSpreads(quotes, bookSort, pageCapacityPx, groupHeights),
-    [quotes, bookSort, pageCapacityPx, groupHeights],
+    () => (singlePage ? [] : buildBookSpreads(quotes, bookSort, pageCapacityPx, groupHeights)),
+    [quotes, bookSort, pageCapacityPx, groupHeights, singlePage],
   )
+
+  const pages = useMemo(
+    () => (singlePage ? buildBookPages(quotes, bookSort, pageCapacityPx, groupHeights) : []),
+    [quotes, bookSort, pageCapacityPx, groupHeights, singlePage],
+  )
+
+  const paginationReady = singlePage ? pages.length > 0 : spreads.length > 0
 
   const isReady = Boolean(
     pageCapacityPx
     && groupHeights?.length === groups.length
-    && (groups.length === 0 || spreads.length > 0),
+    && (groups.length === 0 || paginationReady),
   )
 
   return {
@@ -101,6 +108,8 @@ export default function useMeasuredBookSpreads(quotes, bookSort) {
     groupsMeasureRef,
     groups,
     spreads,
+    pages,
+    singlePage,
     isReady,
     pageCapacityPx,
     columnWidthPx,
