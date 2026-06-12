@@ -2,10 +2,12 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { buildBookGroups, buildBookSpreads } from '../lib/bookLayout'
 
 function readPageContentHeight(probeEl) {
-  if (!probeEl) return null
   const body = probeEl.querySelector('.book-page-body')
   if (!body) return null
-  return body.clientHeight
+  const style = getComputedStyle(body)
+  const padTop = parseFloat(style.paddingTop) || 0
+  const padBottom = parseFloat(style.paddingBottom) || 0
+  return Math.max(body.clientHeight - padTop - padBottom, 120)
 }
 
 function readPageColumnWidth(probeEl) {
@@ -18,8 +20,15 @@ function readGroupHeights(rootEl, groupCount) {
 
   const heights = []
   for (let index = 0; index < groupCount; index += 1) {
-    const node = rootEl.querySelector(`[data-measure-group="${index}"]`)
-    heights.push(node ? node.getBoundingClientRect().height : 0)
+    const body = rootEl.querySelector(`[data-measure-group="${index}"] .book-page-body`)
+    if (!body) {
+      heights.push(0)
+      continue
+    }
+    const style = getComputedStyle(body)
+    const padTop = parseFloat(style.paddingTop) || 0
+    const padBottom = parseFloat(style.paddingBottom) || 0
+    heights.push(body.scrollHeight - padTop - padBottom)
   }
 
   return heights

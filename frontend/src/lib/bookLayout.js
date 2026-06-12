@@ -207,38 +207,34 @@ function pushSpread(spreads, current) {
 export function packSpreadsByHeight(groups, groupHeights, pageCapacityPx) {
   if (groups.length === 0) return []
 
-  const capacity = Math.max(pageCapacityPx, 120)
+  const capacity = Math.max(pageCapacityPx - 48, 120)
   const spreads = []
   let current = { left: [], right: [] }
   let side = 'left'
   let used = 0
+
+  const advancePage = () => {
+    if (side === 'left') {
+      side = 'right'
+      used = 0
+      return
+    }
+    pushSpread(spreads, current)
+    current = { left: [], right: [] }
+    side = 'left'
+    used = 0
+  }
 
   for (let index = 0; index < groups.length; index += 1) {
     const group = groups[index]
     const height = Math.max(groupHeights[index] || 0, 1)
 
     if (used + height > capacity && current[side].length > 0) {
-      if (side === 'left') {
-        side = 'right'
-        used = 0
-      } else {
-        pushSpread(spreads, current)
-        current = { left: [], right: [] }
-        side = 'left'
-        used = 0
-      }
+      advancePage()
     }
 
     if (height > capacity && current[side].length > 0) {
-      if (side === 'left') {
-        side = 'right'
-        used = 0
-      } else {
-        pushSpread(spreads, current)
-        current = { left: [], right: [] }
-        side = 'left'
-        used = 0
-      }
+      advancePage()
     }
 
     for (const item of group.items) {
