@@ -4,10 +4,7 @@ import { buildBookGroups, buildBookSpreads } from '../lib/bookLayout'
 function readPageContentHeight(probeEl) {
   const body = probeEl.querySelector('.book-page-body')
   if (!body) return null
-  const style = getComputedStyle(body)
-  const padTop = parseFloat(style.paddingTop) || 0
-  const padBottom = parseFloat(style.paddingBottom) || 0
-  return Math.max(body.clientHeight - padTop - padBottom, 120)
+  return Math.max(body.clientHeight, 120)
 }
 
 function readPageColumnWidth(probeEl) {
@@ -25,10 +22,7 @@ function readGroupHeights(rootEl, groupCount) {
       heights.push(0)
       continue
     }
-    const style = getComputedStyle(body)
-    const padTop = parseFloat(style.paddingTop) || 0
-    const padBottom = parseFloat(style.paddingBottom) || 0
-    heights.push(body.scrollHeight - padTop - padBottom)
+    heights.push(body.scrollHeight)
   }
 
   return heights

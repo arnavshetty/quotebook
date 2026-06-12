@@ -2343,11 +2343,7 @@ button:disabled {
   width: 100%;
 }
 
-/* Measure each group as if it were mid-page so margins match a full spread. */
-.book-measure-group .book-quote:last-child {
-  margin-bottom: 1.35rem;
-}
-
+/* Measure headings as if mid-page (not first on the spread). */
 .book-measure-group .book-heading--1:first-child {
   margin-top: 0.15rem;
 }
@@ -2434,7 +2430,7 @@ button:disabled {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  padding: 1.5rem 1.65rem 1rem;
+  padding: 1.5rem 1.65rem 0.75rem;
   background:
     linear-gradient(180deg, rgba(255, 253, 249, 0) 0%, rgba(255, 253, 249, 0) 96%, rgba(139, 58, 42, 0.03) 100%),
     var(--surface);
@@ -2469,7 +2465,6 @@ button:disabled {
   grid-row: 2;
   min-height: 0;
   overflow: hidden;
-  padding-bottom: 1.25rem;
   box-sizing: border-box;
 }
 
@@ -2558,8 +2553,7 @@ button:disabled {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 1.35rem;
-  padding-top: 0.5rem;
+  padding-top: 0.2rem;
 }
 
 .book-page-number {

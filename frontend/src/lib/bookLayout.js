@@ -204,10 +204,21 @@ function pushSpread(spreads, current) {
   }
 }
 
+// Matches .book-quote { margin-bottom: 1.35rem } for inter-block packing.
+const QUOTE_BLOCK_GAP_PX = 22
+
+function endsWithQuote(items) {
+  return items.length > 0 && items[items.length - 1].type === 'quote'
+}
+
+function gapBeforeGroup(sideItems) {
+  return endsWithQuote(sideItems) ? QUOTE_BLOCK_GAP_PX : 0
+}
+
 export function packSpreadsByHeight(groups, groupHeights, pageCapacityPx) {
   if (groups.length === 0) return []
 
-  const capacity = Math.max(pageCapacityPx - 48, 120)
+  const capacity = Math.max(pageCapacityPx - 8, 120)
   const spreads = []
   let current = { left: [], right: [] }
   let side = 'left'
@@ -228,19 +239,22 @@ export function packSpreadsByHeight(groups, groupHeights, pageCapacityPx) {
   for (let index = 0; index < groups.length; index += 1) {
     const group = groups[index]
     const height = Math.max(groupHeights[index] || 0, 1)
+    let gap = gapBeforeGroup(current[side])
 
-    if (used + height > capacity && current[side].length > 0) {
+    if (used + gap + height > capacity && current[side].length > 0) {
       advancePage()
+      gap = 0
     }
 
-    if (height > capacity && current[side].length > 0) {
+    if (gap + height > capacity && current[side].length > 0) {
       advancePage()
+      gap = 0
     }
 
     for (const item of group.items) {
       current[side].push(item)
     }
-    used += height
+    used += gap + height
   }
 
   pushSpread(spreads, current)
