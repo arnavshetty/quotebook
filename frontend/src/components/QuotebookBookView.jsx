@@ -16,21 +16,25 @@ function BookPageSide({
   pageNumber,
   title,
   isRight,
+  numberPosition,
   children,
 }) {
+  // Spreads: outer corners. Single-page / explicit end: top-right.
+  const atEnd = numberPosition === 'end' || (numberPosition == null && Boolean(isRight))
+
   return (
     <div className={`book-page${isRight ? ' book-page--right' : ' book-page--left'}`}>
       <header className="book-page-header">
+        {pageNumber != null && !atEnd && (
+          <span className="book-page-number book-page-number--start">{pageNumber}</span>
+        )}
         <span className="book-page-title">{title}</span>
+        {pageNumber != null && atEnd && (
+          <span className="book-page-number book-page-number--end">{pageNumber}</span>
+        )}
       </header>
 
       {children ?? <BookPageContent items={items} />}
-
-      {pageNumber != null && (
-        <footer className="book-page-footer">
-          <span className="book-page-number">{pageNumber}</span>
-        </footer>
-      )}
     </div>
   )
 }
@@ -50,6 +54,7 @@ function BookUnit({
         items={page}
         pageNumber={unitIndex + 1}
         title={quotebookTitle}
+        numberPosition="end"
       />
     )
   }
@@ -108,6 +113,7 @@ function SinglePageCurl({
           items={pages[turn.toIndex]}
           pageNumber={turn.toIndex + 1}
           title={quotebookTitle}
+          numberPosition="end"
         />
       </div>
       <div
@@ -125,6 +131,7 @@ function SinglePageCurl({
             items={pages[turn.fromIndex]}
             pageNumber={turn.fromIndex + 1}
             title={quotebookTitle}
+            numberPosition="end"
           />
         </div>
         <div className="book-curl-face book-curl-face--back" aria-hidden="true" />
@@ -323,6 +330,14 @@ export default function QuotebookBookView({
     })
   }, [isTurning, settleTurn, totalUnits, unitIndex])
 
+  const jumpToUnit = useCallback((nextIndex) => {
+    if (!isReady || totalUnits <= 0) return
+    const clamped = Math.min(Math.max(nextIndex, 0), totalUnits - 1)
+    if (clamped === unitIndex && !turn) return
+    setTurn(null)
+    setUnitIndex(clamped)
+  }, [isReady, totalUnits, turn, unitIndex])
+
   const goPrevious = useCallback(() => {
     goToUnit(unitIndex - 1, 'back')
   }, [goToUnit, unitIndex])
@@ -400,6 +415,12 @@ export default function QuotebookBookView({
 
   const spreadBaseClass = `book-spread${singlePage ? ' book-spread--single' : ''}`
   const turnProgress = turn?.progress ?? 0
+  const statusText = isReady
+    ? singlePage
+      ? `Page ${leftPageNumber} of ${totalPages}`
+      : `Pages ${leftPageNumber}–${rightPageNumber} of ${totalPages}`
+    : 'Preparing pages…'
+  const showScrubber = isReady && totalUnits > 1
 
   if (quotes.length === 0) {
     return (
@@ -411,6 +432,7 @@ export default function QuotebookBookView({
                 items={[]}
                 pageNumber={1}
                 title={quotebookTitle}
+                numberPosition="end"
               >
                 <div className="book-page-body book-page-body--centered">
                   <p className="book-empty-message">This quotebook has no pages yet.</p>
@@ -446,7 +468,12 @@ export default function QuotebookBookView({
     <section className="book-view">
       <div className={shellClassName} ref={shellRef}>
         <div className="book-measure-probe" ref={probeRef} aria-hidden="true">
-          <BookPageSide items={[]} pageNumber={1} title={quotebookTitle} />
+          <BookPageSide
+            items={[]}
+            pageNumber={1}
+            title={quotebookTitle}
+            numberPosition={singlePage ? 'end' : 'start'}
+          />
         </div>
 
         {groups.length > 0 && columnWidthPx && (
@@ -521,11 +548,7 @@ export default function QuotebookBookView({
           Previous
         </button>
         <span className="book-nav-status">
-          {isReady
-            ? singlePage
-              ? `Page ${leftPageNumber} of ${totalPages}`
-              : `Pages ${leftPageNumber}–${rightPageNumber} of ${totalPages}`
-            : 'Preparing pages…'}
+          {statusText}
         </span>
         <button
           type="button"
@@ -538,6 +561,32 @@ export default function QuotebookBookView({
           <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
         </button>
       </nav>
+
+      {showScrubber && (
+        <div className="book-scrubber">
+          <span className="book-scrubber-edge" aria-hidden="true">1</span>
+          <input
+            type="range"
+            className="book-scrubber-input"
+            min={0}
+            max={totalUnits - 1}
+            step={1}
+            value={unitIndex}
+            disabled={isTurning}
+            onChange={(event) => jumpToUnit(Number(event.target.value))}
+            aria-label={singlePage ? 'Jump to page' : 'Jump to spread'}
+            aria-valuetext={statusText}
+            style={{
+              '--scrub-progress': totalUnits > 1
+                ? `${(unitIndex / (totalUnits - 1)) * 100}%`
+                : '0%',
+            }}
+          />
+          <span className="book-scrubber-edge" aria-hidden="true">
+            {totalUnits}
+          </span>
+        </div>
+      )}
     </section>
   )
 }
