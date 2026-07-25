@@ -56,15 +56,27 @@
   font-weight: inherit;
   box-sizing: border-box;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.panel-toggle:hover:not(:disabled) {
-  background: var(--surface-muted);
+/* Keep transparent on tap; mobile browsers stick :hover after touch. */
+.panel-toggle:hover:not(:disabled),
+.panel-toggle:active:not(:disabled),
+.panel-toggle:focus {
+  background: transparent;
   transform: none;
+  box-shadow: none;
 }
 
-.panel-toggle:active:not(:disabled) {
-  transform: none;
+.panel-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .panel-toggle:hover:not(:disabled) {
+    background: var(--surface-muted);
+  }
 }
 
 .panel-toggle-label {
