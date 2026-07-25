@@ -253,6 +253,20 @@
   overflow: hidden;
 }
 
+.book-shell--swipeable {
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.book-shell--swipeable.book-shell--swiping {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.book-shell--curling {
+  overflow: visible;
+}
+
 .book-measure-probe {
   position: absolute;
   top: 0.65rem;
@@ -307,6 +321,22 @@
   min-height: 280px;
 }
 
+.book-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px;
+  perspective: 1800px;
+}
+
+.book-stage--curling {
+  overflow: visible;
+  z-index: 1;
+}
+
 .book-spread {
   display: grid;
   grid-template-columns: 1fr 18px 1fr;
@@ -324,33 +354,118 @@
   grid-template-columns: 1fr;
 }
 
-.book-spread--turn-forward {
-  animation: book-spread-forward 0.35s ease;
+.book-spread--curl-base {
+  position: relative;
+  z-index: 1;
+  width: 100%;
 }
 
-.book-spread--turn-back {
-  animation: book-spread-back 0.35s ease;
+.book-spread--curl-spread {
+  position: relative;
+  overflow: visible;
+  z-index: 1;
 }
 
-@keyframes book-spread-forward {
-  from {
-    opacity: 0.55;
-    transform: translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Keep the spine above the turning leaf so it never gets covered at the end. */
+.book-spread--curl-spread .book-gutter--curl {
+  position: relative;
+  z-index: 4;
 }
 
-@keyframes book-spread-back {
-  from {
-    opacity: 0.55;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+.book-curl-leaf {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Wide layout: hinge at the spine center; only one half-page turns. */
+.book-curl-leaf--right {
+  inset: auto;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 50%;
+  transform-origin: left center;
+}
+
+.book-curl-leaf--left {
+  inset: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  transform-origin: right center;
+}
+
+.book-curl-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.book-curl-leaf--right .book-curl-face,
+.book-curl-leaf--left .book-curl-face {
+  border-radius: 0;
+}
+
+.book-curl-leaf--right .book-curl-face {
+  border-radius: 0 8px 8px 0;
+}
+
+.book-curl-leaf--left .book-curl-face {
+  border-radius: 8px 0 0 8px;
+}
+
+.book-curl-face--front {
+  z-index: 2;
+  box-shadow:
+    0 2px 8px rgba(26, 22, 18, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.book-curl-face--front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    var(--curl-shade-dir, 90deg),
+    rgba(26, 22, 18, 0.22) 0%,
+    rgba(26, 22, 18, 0.06) 42%,
+    transparent 70%
+  );
+  opacity: var(--curl-shade, 0);
+}
+
+.book-curl-face--back {
+  z-index: 1;
+  transform: rotateY(180deg);
+  background:
+    linear-gradient(90deg, rgba(26, 22, 18, 0.1), transparent 18%),
+    linear-gradient(180deg, #efe6d8 0%, #e4d9c8 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 8px 0 18px rgba(26, 22, 18, 0.08);
+}
+
+.book-curl-face--back-content {
+  background: transparent;
+  box-shadow: none;
+}
+
+.book-curl-face--back-content .book-page {
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-curl-leaf {
+    transition: none !important;
   }
 }
 
