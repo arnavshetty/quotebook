@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { api, supabase, toAppUser } from './api/client'
+import { api, supabase, toAppUser, usernameFromAuthUser } from './api/client'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
 import ForgotPassword from './pages/ForgotPassword'
@@ -24,39 +24,49 @@ export default function App() {
   useEffect(() => {
     let active = true
 
-    const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
+    // Keep auth notify handlers sync. Awaiting supabase.from()/getSession()
+    // inside onAuthStateChange can deadlock with auth client init and leave
+    // the app stuck on "Loading…" until a full refresh.
+    const applyAuthUser = (authUser) => {
       if (!active) return
 
-      if (error) {
+      if (!authUser) {
         setUser(null)
-      } else if (data.session?.user) {
-        try {
-          setUser(await toAppUser(data.session.user))
-        } catch {
-          setUser(null)
-        }
-      } else {
-        setUser(null)
+        setLoading(false)
+        return
       }
+
+      setUser({
+        id: authUser.id,
+        email: authUser.email,
+        username: usernameFromAuthUser(authUser),
+      })
       setLoading(false)
+
+      toAppUser(authUser).then((appUser) => {
+        if (active) setUser(appUser)
+      })
     }
 
-    loadSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!active) return
-
-      if (session?.user) {
-        try {
-          setUser(await toAppUser(session.user))
-        } catch {
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) {
           setUser(null)
+          setLoading(false)
+          return
         }
-      } else {
+        applyAuthUser(data.session?.user ?? null)
+      })
+      .catch(() => {
+        if (!active) return
         setUser(null)
-      }
-      setLoading(false)
+        setLoading(false)
+      })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyAuthUser(session?.user ?? null)
     })
 
     return () => {
