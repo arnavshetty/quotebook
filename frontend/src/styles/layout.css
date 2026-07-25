@@ -145,6 +145,10 @@
   gap: 0.55rem;
 }
 
+.quotebook-chrome-export .segmented-toggle {
+  flex-wrap: wrap;
+}
+
 .quotebook-chrome-main {
   min-width: 0;
 }
