@@ -315,4 +315,4 @@ export const api = {
   },
 }
 
-export { supabase, toAppUser }
+export { supabase, toAppUser, usernameFromAuthUser }
