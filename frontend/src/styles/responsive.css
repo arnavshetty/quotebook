@@ -191,7 +191,7 @@
   }
 
   .book-page {
-    padding: 1.15rem 1.1rem 0.9rem;
+    padding: 0.65rem 1.1rem 0.9rem;
     min-height: 320px;
   }
 
@@ -208,6 +208,26 @@
     order: -1;
     width: 100%;
     text-align: center;
+  }
+
+  .book-scrubber {
+    gap: 0.5rem;
+    padding: 0.45rem 0 0.55rem;
+  }
+
+  .book-scrubber-input {
+    height: 2.1rem;
+  }
+
+  .book-scrubber-input::-webkit-slider-thumb {
+    width: 12px;
+    height: 22px;
+    margin-top: -9px;
+  }
+
+  .book-scrubber-input::-moz-range-thumb {
+    width: 12px;
+    height: 22px;
   }
 
   .quotebook-toolbar {
