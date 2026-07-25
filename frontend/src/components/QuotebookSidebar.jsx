@@ -80,14 +80,22 @@ export default function QuotebookSidebar({
     }
   }
 
-  const handleRoleChange = async (userId, role) => {
+  const collaboratorKey = (collaborator) =>
+    collaborator.user_id || `pending:${collaborator.email}`
+
+  const handleRoleChange = async (collaborator, role) => {
     setEditingRoleUserId(null)
     setError('')
     setMessage('')
     try {
-      await api.updateCollaboratorRole(quotebookId, userId, role)
+      await api.updateCollaboratorRole(quotebookId, {
+        userId: collaborator.user_id || null,
+        email: collaborator.status === 'pending' ? collaborator.email : null,
+        role,
+      })
+      const key = collaboratorKey(collaborator)
       setCollaborators((prev) =>
-        prev.map((c) => (c.user_id === userId ? { ...c, role } : c)),
+        prev.map((c) => (collaboratorKey(c) === key ? { ...c, role } : c)),
       )
       setMessage('Role updated.')
     } catch (err) {
@@ -96,14 +104,22 @@ export default function QuotebookSidebar({
   }
 
   const handleRemove = async (collaborator) => {
+    const isPending = collaborator.status === 'pending'
     const label = collaborator.username || collaborator.email
-    if (!window.confirm(`Remove ${label} from this quotebook?`)) return
+    const confirmText = isPending
+      ? `Cancel invite for ${label}?`
+      : `Remove ${label} from this quotebook?`
+    if (!window.confirm(confirmText)) return
     setError('')
     setMessage('')
     try {
-      await api.removeCollaborator(quotebookId, collaborator.user_id)
-      setCollaborators((prev) => prev.filter((c) => c.user_id !== collaborator.user_id))
-      setMessage('Collaborator removed.')
+      await api.removeCollaborator(quotebookId, {
+        userId: collaborator.user_id || null,
+        email: isPending ? collaborator.email : null,
+      })
+      const key = collaboratorKey(collaborator)
+      setCollaborators((prev) => prev.filter((c) => collaboratorKey(c) !== key))
+      setMessage(isPending ? 'Invite cancelled.' : 'Collaborator removed.')
     } catch (err) {
       setError(err.message)
     }
@@ -111,6 +127,13 @@ export default function QuotebookSidebar({
 
   const showSpeakers = speakerLeaderboard.length > 0
   const canClearSpeakerFilter = Boolean(activeSpeaker && onSpeakerSelect)
+  const pendingCount = collaborators.filter((c) => c.status === 'pending').length
+  const activeCount = collaborators.length - pendingCount
+  const collaboratorsHint = loadingCollaborators
+    ? 'Loading…'
+    : pendingCount > 0
+      ? `${activeCount} shared · ${pendingCount} pending`
+      : `${activeCount} shared`
 
   return (
     <aside className="quotebook-sidebar">
@@ -157,7 +180,7 @@ export default function QuotebookSidebar({
           open={collaboratorsOpen}
           onToggle={() => setCollaboratorsOpen((open) => !open)}
           title="Collaborators"
-          hint={loadingCollaborators ? 'Loading…' : `${collaborators.length} shared`}
+          hint={collaboratorsHint}
           innerClassName="sidebar-section-body"
         >
                 {loadingCollaborators ? (
@@ -167,11 +190,16 @@ export default function QuotebookSidebar({
                 ) : (
                   <ul className="collaborator-list">
                     {collaborators.map((collaborator) => {
+                      const key = collaboratorKey(collaborator)
+                      const isPending = collaborator.status === 'pending'
                       const label = collaborator.username || collaborator.email
-                      const isEditingRole = editingRoleUserId === collaborator.user_id
+                      const isEditingRole = editingRoleUserId === key
 
                       return (
-                        <li key={collaborator.user_id} className="collaborator-item">
+                        <li
+                          key={key}
+                          className={`collaborator-item${isPending ? ' collaborator-item--pending' : ''}`}
+                        >
                           <div className="collaborator-info">
                             <div className="collaborator-name-wrap">
                               <span className="collaborator-name">{label}</span>
@@ -181,7 +209,7 @@ export default function QuotebookSidebar({
                                     ref={roleSelectRef}
                                     className={`collaborator-role-select badge badge--${collaborator.role}`}
                                     value={collaborator.role}
-                                    onChange={(e) => handleRoleChange(collaborator.user_id, e.target.value)}
+                                    onChange={(e) => handleRoleChange(collaborator, e.target.value)}
                                     onBlur={() => setEditingRoleUserId(null)}
                                     aria-label={`Role for ${label}`}
                                   >
@@ -194,11 +222,14 @@ export default function QuotebookSidebar({
                                     {collaborator.role}
                                   </span>
                                 )}
+                                {isPending && (
+                                  <span className="badge badge--pending">pending</span>
+                                )}
                                 {canManageRoles && !isEditingRole && (
                                   <button
                                     type="button"
                                     className="icon-action-btn icon-action-btn--compact icon-action-btn--reveal"
-                                    onClick={() => setEditingRoleUserId(collaborator.user_id)}
+                                    onClick={() => setEditingRoleUserId(key)}
                                     aria-label={`Change role for ${label}`}
                                   >
                                     <Pencil size={11} strokeWidth={2} aria-hidden="true" />
@@ -206,19 +237,24 @@ export default function QuotebookSidebar({
                                 )}
                               </div>
                             </div>
-                            {(collaborator.username || canManageRoles) && (
+                            {(collaborator.username || isPending || canManageRoles) && (
                               <div className="collaborator-meta-row">
                                 {collaborator.username && (
                                   <span className="collaborator-email">{collaborator.email}</span>
+                                )}
+                                {isPending && !collaborator.username && (
+                                  <span className="collaborator-email">
+                                    Gets access when they sign up
+                                  </span>
                                 )}
                                 {canManageRoles && (
                                   <button
                                     type="button"
                                     className="text-btn text-btn--danger"
                                     onClick={() => handleRemove(collaborator)}
-                                    aria-label={`Remove ${label}`}
+                                    aria-label={isPending ? `Cancel invite for ${label}` : `Remove ${label}`}
                                   >
-                                    Remove
+                                    {isPending ? 'Cancel' : 'Remove'}
                                   </button>
                                 )}
                               </div>
@@ -256,7 +292,8 @@ export default function QuotebookSidebar({
                   </button>
                 </form>
                 <p className="sidebar-hint">
-                  They must already have an account. The quotebook appears on their dashboard — no invite email is sent.
+                  Registered users get access right away. Others get a pending invite and see the
+                  quotebook on their dashboard when they sign up — no invite email is sent.
                 </p>
         </CollapsibleSection>
       )}
