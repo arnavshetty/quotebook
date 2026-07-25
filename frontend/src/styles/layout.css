@@ -432,6 +432,11 @@
   border-radius: 8px;
 }
 
+.collaborator-item--pending {
+  background: color-mix(in srgb, var(--surface-muted) 70%, var(--surface));
+  border-style: dashed;
+}
+
 .collaborator-info {
   display: flex;
   flex-direction: column;

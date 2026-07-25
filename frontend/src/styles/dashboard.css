@@ -434,6 +434,13 @@
   color: var(--ink-muted);
 }
 
+.badge--pending {
+  background: color-mix(in srgb, var(--ink-faint) 14%, var(--surface));
+  color: var(--ink-muted);
+  text-transform: lowercase;
+  font-weight: 500;
+}
+
 .quotebook-card-footer-end .icon-action-btn {
   width: 24px;
   height: 24px;

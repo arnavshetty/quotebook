@@ -233,25 +233,27 @@ export const api = {
     return { collaborators: data || [] }
   },
 
-  updateCollaboratorRole: async (quotebookId, userId, role) => {
+  updateCollaboratorRole: async (quotebookId, { userId = null, email = null, role }) => {
     const { error } = await supabase.rpc('update_quotebook_collaborator_role', {
       p_quotebook_id: quotebookId,
       p_user_id: userId,
       p_role: role,
+      p_email: email,
     })
 
     if (error) throw new Error(error.message)
     return { message: 'Role updated.' }
   },
 
-  removeCollaborator: async (quotebookId, userId) => {
+  removeCollaborator: async (quotebookId, { userId = null, email = null }) => {
     const { error } = await supabase.rpc('remove_quotebook_collaborator', {
       p_quotebook_id: quotebookId,
       p_user_id: userId,
+      p_email: email,
     })
 
     if (error) throw new Error(error.message)
-    return { message: 'Collaborator removed.' }
+    return { message: userId ? 'Collaborator removed.' : 'Invite cancelled.' }
   },
 
   leaveQuotebook: async (quotebookId) => {
@@ -275,14 +277,25 @@ export const api = {
   },
 
   shareQuotebook: async (quotebookId, { email, role }) => {
-    const { error } = await supabase.rpc('share_quotebook_with_email', {
+    const { data, error } = await supabase.rpc('share_quotebook_with_email', {
       p_quotebook_id: quotebookId,
       p_friend_email: email,
       p_role: role,
     })
 
     if (error) throw new Error(error.message)
-    return { message: `Successfully shared with ${email}.` }
+
+    if (data === 'invited') {
+      return {
+        status: 'invited',
+        message: `Invite saved for ${email}. They'll get access when they sign up.`,
+      }
+    }
+
+    return {
+      status: 'shared',
+      message: `Shared with ${email}.`,
+    }
   },
 
   updateQuote: async (blockId, { month, day_range, year, lines }) => {
