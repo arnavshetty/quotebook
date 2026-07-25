@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { BookPageContent } from './BookPageItems'
 import useMediaQuery from '../hooks/useMediaQuery'
 import useMeasuredBookSpreads from '../hooks/useMeasuredBookSpreads'
+import useSwipeNavigation from '../hooks/useSwipeNavigation'
 
 function BookPageSide({
   items,
@@ -73,22 +74,38 @@ export default function QuotebookBookView({
     setUnitIndex(nextIndex)
   }, [totalUnits])
 
+  const goPrevious = useCallback(() => {
+    goToUnit(unitIndex - 1, 'back')
+  }, [goToUnit, unitIndex])
+
+  const goNext = useCallback(() => {
+    goToUnit(unitIndex + 1, 'forward')
+  }, [goToUnit, unitIndex])
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        goToUnit(unitIndex - 1, 'back')
+        goPrevious()
       } else if (event.key === 'ArrowRight') {
         event.preventDefault()
-        goToUnit(unitIndex + 1, 'forward')
+        goNext()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [goToUnit, unitIndex])
+  }, [goNext, goPrevious])
 
-  const shellClassName = `book-shell${singlePage ? ' book-shell--single-page' : ''}`
+  const canSwipe = isReady && totalUnits > 1
+
+  useSwipeNavigation(shellRef, {
+    enabled: canSwipe,
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrevious,
+  })
+
+  const shellClassName = `book-shell${singlePage ? ' book-shell--single-page' : ''}${canSwipe ? ' book-shell--swipeable' : ''}`
 
   if (quotes.length === 0) {
     return (
@@ -197,7 +214,7 @@ export default function QuotebookBookView({
         <button
           type="button"
           className="book-nav-btn"
-          onClick={() => goToUnit(unitIndex - 1, 'back')}
+          onClick={goPrevious}
           disabled={!isReady || unitIndex === 0}
           aria-label={singlePage ? 'Previous page' : 'Previous spread'}
         >
@@ -214,7 +231,7 @@ export default function QuotebookBookView({
         <button
           type="button"
           className="book-nav-btn"
-          onClick={() => goToUnit(unitIndex + 1, 'forward')}
+          onClick={goNext}
           disabled={!isReady || unitIndex >= totalUnits - 1}
           aria-label={singlePage ? 'Next page' : 'Next spread'}
         >

@@ -253,6 +253,16 @@
   overflow: hidden;
 }
 
+.book-shell--swipeable {
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.book-shell--swipeable.book-shell--swiping {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .book-measure-probe {
   position: absolute;
   top: 0.65rem;
