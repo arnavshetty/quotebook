@@ -222,16 +222,6 @@
   gap: 0;
 }
 
-.sidebar-section--collapsible > .speaker-leaderboard,
-.sidebar-section--collapsible > .sidebar-section-body,
-.sidebar-section--collapsible .collapsible-body-inner {
-  padding: 0 1.2rem;
-}
-
-.sidebar-section--collapsible:not(.is-collapsed) .collapsible-body-inner {
-  padding-bottom: 1rem;
-}
-
 .sidebar-section--collapsible .collapsible-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -243,21 +233,22 @@
   grid-template-rows: 1fr;
 }
 
-.sidebar-section--collapsible.is-collapsed .collapsible-body-inner {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
+/* Clipper only — no padding here, or 0fr leave a closed-state sliver. */
 .collapsible-body-inner {
   overflow: hidden;
   min-height: 0;
+}
+
+/* Padding lives inside the clipper so it animates away with the content. */
+.sidebar-section--collapsible .collapsible-body-content {
+  padding: 0.5rem 1.2rem 1rem;
 }
 
 .sidebar-section--collapsible + .sidebar-section--collapsible {
   border-top: 1px solid var(--border);
 }
 
-.sidebar-section--collapsible:has(+ .sidebar-section--collapsible):not(.is-collapsed) .collapsible-body-inner {
+.sidebar-section--collapsible:has(+ .sidebar-section--collapsible) .collapsible-body-content {
   padding-bottom: 1.15rem;
 }
 
@@ -278,28 +269,85 @@
   font-weight: inherit;
   box-sizing: border-box;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-section--collapsible + .sidebar-section--collapsible .sidebar-section-toggle {
   padding-top: 1rem;
 }
 
-.sidebar-section-toggle:hover:not(:disabled) {
-  background: var(--bg-accent);
+/* Keep transparent on tap; mobile browsers stick :hover after touch. */
+.sidebar-section-toggle:hover:not(:disabled),
+.sidebar-section-toggle:active:not(:disabled),
+.sidebar-section-toggle:focus,
+.sidebar-section-chevron-btn:hover:not(:disabled),
+.sidebar-section-chevron-btn:active:not(:disabled),
+.sidebar-section-chevron-btn:focus {
+  background: transparent;
   transform: none;
+  box-shadow: none;
 }
 
-.sidebar-section-toggle:active:not(:disabled) {
-  transform: none;
+.sidebar-section-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
-.sidebar-section-toggle:hover .sidebar-section-toggle-title {
-  color: var(--ink);
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-right: 0.85rem;
+  box-sizing: border-box;
 }
 
-.sidebar-section-toggle:hover .sidebar-section-toggle-hint,
-.sidebar-section-toggle:hover .sidebar-section-chevron {
-  color: var(--ink-muted);
+.sidebar-section-header .sidebar-section-toggle {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  padding-right: 0.35rem;
+}
+
+.sidebar-section-header-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-section-chevron-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-section-header:has(.sidebar-section-toggle:hover),
+  .sidebar-section-header:has(.sidebar-section-chevron-btn:hover) {
+    background: var(--bg-accent);
+  }
+
+  .sidebar-section-header:has(.sidebar-section-toggle:hover) .sidebar-section-toggle-title,
+  .sidebar-section-header:has(.sidebar-section-chevron-btn:hover) .sidebar-section-toggle-title {
+    color: var(--ink);
+  }
+
+  .sidebar-section-header:has(.sidebar-section-toggle:hover) .sidebar-section-toggle-hint,
+  .sidebar-section-header:has(.sidebar-section-toggle:hover) .sidebar-section-chevron,
+  .sidebar-section-header:has(.sidebar-section-chevron-btn:hover) .sidebar-section-toggle-hint,
+  .sidebar-section-header:has(.sidebar-section-chevron-btn:hover) .sidebar-section-chevron {
+    color: var(--ink-muted);
+  }
 }
 
 .sidebar-section-toggle-text {
@@ -321,6 +369,9 @@
   font-size: 0.75rem;
   line-height: 1.35;
   color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-section-chevron {

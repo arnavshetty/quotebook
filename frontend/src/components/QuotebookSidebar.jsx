@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, Pencil } from 'lucide-react'
+import { LogOut, Pencil, X } from 'lucide-react'
 import { api } from '../api/client'
 import CollapsibleSection from './CollapsibleSection'
 import RoleBadgeSelect from './RoleBadgeSelect'
 import SpeakerLeaderboard from './SpeakerLeaderboard'
 
 const ROLES = ['viewer', 'contributor', 'admin']
+const MOBILE_SIDEBAR_QUERY = '(max-width: 900px)'
+
+function getInitialSectionOpen() {
+  if (typeof window === 'undefined') return true
+  return !window.matchMedia(MOBILE_SIDEBAR_QUERY).matches
+}
 
 export default function QuotebookSidebar({
   quotebookId,
@@ -30,9 +36,9 @@ export default function QuotebookSidebar({
   const [message, setMessage] = useState('')
   const [loadingCollaborators, setLoadingCollaborators] = useState(showCollaborators)
   const [sharing, setSharing] = useState(false)
-  const [speakersOpen, setSpeakersOpen] = useState(true)
-  const [collaboratorsOpen, setCollaboratorsOpen] = useState(true)
-  const [accessOpen, setAccessOpen] = useState(true)
+  const [speakersOpen, setSpeakersOpen] = useState(getInitialSectionOpen)
+  const [collaboratorsOpen, setCollaboratorsOpen] = useState(getInitialSectionOpen)
+  const [accessOpen, setAccessOpen] = useState(getInitialSectionOpen)
   const [editingRoleUserId, setEditingRoleUserId] = useState(null)
   const roleSelectRef = useRef(null)
 
@@ -104,6 +110,7 @@ export default function QuotebookSidebar({
   }
 
   const showSpeakers = speakerLeaderboard.length > 0
+  const canClearSpeakerFilter = Boolean(activeSpeaker && onSpeakerSelect)
 
   return (
     <aside className="quotebook-sidebar">
@@ -113,11 +120,23 @@ export default function QuotebookSidebar({
           onToggle={() => setSpeakersOpen((open) => !open)}
           title="Speakers"
           hint={
-            activeSpeaker && onSpeakerSelect
+            canClearSpeakerFilter
               ? `Filtering · ${activeSpeaker}`
               : onSpeakerSelect
                 ? 'Ranked by count · click to filter'
                 : 'Ranked by count'
+          }
+          headerAction={
+            canClearSpeakerFilter ? (
+              <button
+                type="button"
+                className="icon-action-btn icon-action-btn--discard"
+                onClick={() => onSpeakerSelect(activeSpeaker)}
+                aria-label={`Clear speaker filter for ${activeSpeaker}`}
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            ) : null
           }
         >
           <SpeakerLeaderboard
