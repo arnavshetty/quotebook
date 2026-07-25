@@ -1,4 +1,4 @@
-import { BookOpen, Download, List, Plus } from 'lucide-react'
+import { BookOpen, Download, FileText, List, Plus, Printer } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
@@ -108,9 +108,14 @@ export default function Quotebook({ user }) {
     }
   }
 
-  const handleExport = (format) => {
+  const handleExport = async (format) => {
     if (!quotebook || quotes.length === 0) return
-    downloadQuotebookExport(quotes, quotebook, format, bookSort)
+    setError('')
+    try {
+      await downloadQuotebookExport(quotes, quotebook, format, bookSort)
+    } catch (err) {
+      setError(err.message || 'Export failed.')
+    }
   }
 
   const handleDelete = async (blockId) => {
@@ -248,6 +253,14 @@ export default function Quotebook({ user }) {
                     <button type="button" onClick={() => handleExport('json')}>
                       <Download size={14} strokeWidth={2} aria-hidden="true" />
                       JSON
+                    </button>
+                    <button type="button" onClick={() => handleExport('pdf')}>
+                      <FileText size={14} strokeWidth={2} aria-hidden="true" />
+                      PDF
+                    </button>
+                    <button type="button" onClick={() => handleExport('print')}>
+                      <Printer size={14} strokeWidth={2} aria-hidden="true" />
+                      Print
                     </button>
                   </div>
                 </div>
