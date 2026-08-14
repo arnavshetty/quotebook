@@ -67,11 +67,26 @@ export default function QuotebookSidebar({
   }, [quotebookId, showCollaborators])
 
   useEffect(() => {
+    let active = true
+
     setLoadingNotificationSetting(true)
     api.getQuoteNotificationSetting(quotebookId)
-      .then(({ enabled }) => setNotifyOnNewQuote(enabled))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoadingNotificationSetting(false))
+      .then(({ enabled }) => {
+        if (!active) return
+        setNotifyOnNewQuote(enabled)
+      })
+      .catch((err) => {
+        if (!active) return
+        setError(err.message)
+      })
+      .finally(() => {
+        if (!active) return
+        setLoadingNotificationSetting(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [quotebookId])
 
   const handleNotificationToggle = async (event) => {

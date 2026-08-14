@@ -26,28 +26,36 @@ export default function NotificationBell({ userId }) {
   const panelRef = useRef(null)
   const buttonRef = useRef(null)
 
-  const refresh = useCallback(async () => {
-    if (!userId) return
+  const refresh = useCallback(async (isActive = () => true) => {
+    if (!userId || !isActive()) return
 
-    const [{ notifications: items }, { count }] = await Promise.all([
-      api.getNotifications(),
-      api.getUnreadNotificationCount(),
-    ])
+    try {
+      const [{ notifications: items }, { count }] = await Promise.all([
+        api.getNotifications(),
+        api.getUnreadNotificationCount(),
+      ])
 
-    setNotifications(items)
-    setUnreadCount(count)
+      if (!isActive()) return
+
+      setNotifications(items)
+      setUnreadCount(count)
+    } catch {
+      if (!isActive()) return
+      setNotifications([])
+      setUnreadCount(0)
+    }
   }, [userId])
 
   useEffect(() => {
     if (!userId) return undefined
 
+    let active = true
+    const isActive = () => active
+
     setLoading(true)
-    refresh()
-      .catch(() => {
-        setNotifications([])
-        setUnreadCount(0)
-      })
-      .finally(() => setLoading(false))
+    refresh(isActive).finally(() => {
+      if (isActive()) setLoading(false)
+    })
 
     const channel = supabase
       .channel(`notifications:${userId}`)
@@ -60,12 +68,13 @@ export default function NotificationBell({ userId }) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          refresh().catch(() => {})
+          refresh(isActive)
         },
       )
       .subscribe()
 
     return () => {
+      active = false
       supabase.removeChannel(channel)
     }
   }, [userId, refresh])
