@@ -265,6 +265,54 @@ export const api = {
     return { message: 'Left quotebook.' }
   },
 
+  getNotifications: async (limit = 20) => {
+    const { data, error } = await supabase.rpc('get_my_notifications', {
+      p_limit: limit,
+    })
+
+    if (error) throw new Error(error.message)
+    return { notifications: data || [] }
+  },
+
+  getUnreadNotificationCount: async () => {
+    const { data, error } = await supabase.rpc('get_unread_notification_count')
+    if (error) throw new Error(error.message)
+    return { count: Number(data) || 0 }
+  },
+
+  markNotificationRead: async (notificationId) => {
+    const { error } = await supabase.rpc('mark_notification_read', {
+      p_notification_id: notificationId,
+    })
+
+    if (error) throw new Error(error.message)
+  },
+
+  markAllNotificationsRead: async () => {
+    const { data, error } = await supabase.rpc('mark_all_notifications_read')
+    if (error) throw new Error(error.message)
+    return { count: Number(data) || 0 }
+  },
+
+  getQuoteNotificationSetting: async (quotebookId) => {
+    const { data, error } = await supabase.rpc('get_quotebook_notification_setting', {
+      p_quotebook_id: quotebookId,
+    })
+
+    if (error) throw new Error(error.message)
+    return { enabled: data !== false }
+  },
+
+  setQuoteNotificationSetting: async (quotebookId, enabled) => {
+    const { error } = await supabase.rpc('set_quotebook_notification_setting', {
+      p_quotebook_id: quotebookId,
+      p_enabled: enabled,
+    })
+
+    if (error) throw new Error(error.message)
+    return { enabled }
+  },
+
   renameSpeaker: async (quotebookId, oldName, newName) => {
     const { data, error } = await supabase.rpc('rename_speaker_in_quotebook', {
       p_quotebook_id: quotebookId,

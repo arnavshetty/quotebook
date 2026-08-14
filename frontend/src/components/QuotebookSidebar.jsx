@@ -39,6 +39,10 @@ export default function QuotebookSidebar({
   const [speakersOpen, setSpeakersOpen] = useState(getInitialSectionOpen)
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(getInitialSectionOpen)
   const [accessOpen, setAccessOpen] = useState(getInitialSectionOpen)
+  const [notificationsOpen, setNotificationsOpen] = useState(getInitialSectionOpen)
+  const [notifyOnNewQuote, setNotifyOnNewQuote] = useState(true)
+  const [loadingNotificationSetting, setLoadingNotificationSetting] = useState(true)
+  const [savingNotificationSetting, setSavingNotificationSetting] = useState(false)
   const [editingRoleUserId, setEditingRoleUserId] = useState(null)
   const roleSelectRef = useRef(null)
 
@@ -61,6 +65,30 @@ export default function QuotebookSidebar({
 
     loadCollaborators().finally(() => setLoadingCollaborators(false))
   }, [quotebookId, showCollaborators])
+
+  useEffect(() => {
+    setLoadingNotificationSetting(true)
+    api.getQuoteNotificationSetting(quotebookId)
+      .then(({ enabled }) => setNotifyOnNewQuote(enabled))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoadingNotificationSetting(false))
+  }, [quotebookId])
+
+  const handleNotificationToggle = async (event) => {
+    const enabled = event.target.checked
+    setNotifyOnNewQuote(enabled)
+    setSavingNotificationSetting(true)
+    setError('')
+    try {
+      await api.setQuoteNotificationSetting(quotebookId, enabled)
+      setMessage(enabled ? 'Notifications turned on.' : 'Notifications turned off.')
+    } catch (err) {
+      setNotifyOnNewQuote(!enabled)
+      setError(err.message)
+    } finally {
+      setSavingNotificationSetting(false)
+    }
+  }
 
   const handleShare = async (event) => {
     event.preventDefault()
@@ -298,9 +326,36 @@ export default function QuotebookSidebar({
         </CollapsibleSection>
       )}
 
+      {(showSpeakers || showCollaborators) && (
+        <hr className="sidebar-divider sidebar-divider--visible" />
+      )}
+
+      <CollapsibleSection
+        open={notificationsOpen}
+        onToggle={() => setNotificationsOpen((open) => !open)}
+        title="Notifications"
+        hint={loadingNotificationSetting ? 'Loading…' : notifyOnNewQuote ? 'On' : 'Off'}
+        innerClassName="sidebar-section-body sidebar-access-body"
+      >
+        <div className="sidebar-access-card">
+          <label className="sidebar-notification-toggle">
+            <input
+              type="checkbox"
+              checked={notifyOnNewQuote}
+              onChange={handleNotificationToggle}
+              disabled={loadingNotificationSetting || savingNotificationSetting}
+            />
+            <span>Notify me when someone adds a quote</span>
+          </label>
+          <p className="sidebar-hint sidebar-access-hint">
+            Shows in the bell menu in the header. You won&apos;t be notified for quotes you add yourself.
+          </p>
+        </div>
+      </CollapsibleSection>
+
       {showAccess && (
         <>
-          {(showSpeakers || showCollaborators) && <hr className="sidebar-divider sidebar-divider--visible" />}
+          <hr className="sidebar-divider sidebar-divider--visible" />
 
           <CollapsibleSection
             open={accessOpen}

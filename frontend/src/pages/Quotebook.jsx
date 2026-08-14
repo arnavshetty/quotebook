@@ -190,7 +190,7 @@ export default function Quotebook({ user }) {
   if (loading) return <p className="page-message">Loading quotebook…</p>
 
   const showCollaborators = canManageCollaborators(quotebook) && viewMode === 'edit'
-  const showSidebar = speakerLeaderboard.length > 0 || showCollaborators || canLeave
+  const showSidebar = speakerLeaderboard.length > 0 || showCollaborators || canLeave || Boolean(quotebook)
 
   return (
     <div className={`quotebook-page${viewMode === 'book' ? ' quotebook-page--read' : ''}`}>
