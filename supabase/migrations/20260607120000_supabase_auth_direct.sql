@@ -1,18 +1,5 @@
 -- Migrate from custom users table to Supabase Auth + profiles
-
--- Drop old policies
-DROP POLICY IF EXISTS "Users can view their own profile" ON users;
-DROP POLICY IF EXISTS "Users can update their own profile" ON users;
-DROP POLICY IF EXISTS "Users can view quotebooks they own or are shared with them" ON quotebooks;
-DROP POLICY IF EXISTS "Users can create their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Owners can update their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Owners can delete their own quotebooks" ON quotebooks;
-DROP POLICY IF EXISTS "Users can view permissions for quotebooks they have access to" ON quotebook_permissions;
-DROP POLICY IF EXISTS "Only quotebook owners can manage permissions" ON quotebook_permissions;
-DROP POLICY IF EXISTS "Users can view quote blocks in accessible quotebooks" ON quote_blocks;
-DROP POLICY IF EXISTS "Users can add quote blocks if they are owners or contributors" ON quote_blocks;
-DROP POLICY IF EXISTS "Users can view utterances if they can view the quote block" ON utterances;
-DROP POLICY IF EXISTS "Users can insert utterances if they can write to the quote block" ON utterances;
+-- Fresh installs have no legacy tables; CASCADE drops old policies too.
 
 DROP TABLE IF EXISTS utterances CASCADE;
 DROP TABLE IF EXISTS quote_blocks CASCADE;

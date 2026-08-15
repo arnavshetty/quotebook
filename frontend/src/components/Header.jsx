@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
+import NotificationBell from './NotificationBell'
 
 export default function Header({ user, onLogout }) {
   return (
@@ -11,6 +12,7 @@ export default function Header({ user, onLogout }) {
       <nav>
         {user ? (
           <>
+            <NotificationBell user={user} />
             <span className="nav-user">{user.username}</span>
             <button type="button" className="nav-btn" onClick={onLogout}>
               Log out

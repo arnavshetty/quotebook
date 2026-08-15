@@ -24,6 +24,20 @@
   margin: 0;
 }
 
+.sidebar-notification-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.sidebar-notification-toggle input {
+  margin-top: 0.15rem;
+  accent-color: var(--accent);
+}
+
 .sidebar-leave-btn {
   display: inline-flex;
   align-items: center;
