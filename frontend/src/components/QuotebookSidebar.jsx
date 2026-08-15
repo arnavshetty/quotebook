@@ -363,7 +363,8 @@ export default function QuotebookSidebar({
             <span>Notify me when someone adds a quote</span>
           </label>
           <p className="sidebar-hint sidebar-access-hint">
-            Shows in the bell menu in the header. You won&apos;t be notified for quotes you add yourself.
+            When on, new quotes from others appear in the bell in the header. You won&apos;t be
+            notified for quotes you add yourself.
           </p>
         </div>
       </CollapsibleSection>

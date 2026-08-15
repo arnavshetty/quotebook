@@ -154,8 +154,34 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.create_new_quote_notifications(INTEGER)
   FROM PUBLIC, anon, authenticated;
 
+CREATE OR REPLACE FUNCTION public.trigger_create_new_quote_notifications()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM public.user_notifications n
+        WHERE n.quote_block_id = NEW.quote_block_id
+    ) THEN
+        PERFORM public.create_new_quote_notifications(NEW.quote_block_id);
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.trigger_create_new_quote_notifications()
+  FROM PUBLIC, anon, authenticated;
+
+CREATE TRIGGER create_new_quote_notifications_on_utterance
+    AFTER INSERT ON public.utterances
+    FOR EACH ROW
+    EXECUTE FUNCTION public.trigger_create_new_quote_notifications();
+
 -- ---------------------------------------------------------------------------
--- Hook quote creation
+-- Hook quote creation (notifications fire from utterances trigger above)
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.add_quote_entry(
     p_quotebook_id INTEGER,
@@ -233,8 +259,6 @@ BEGIN
         DELETE FROM quote_blocks WHERE id = block_id;
         RAISE EXCEPTION 'At least one quote line is required';
     END IF;
-
-    PERFORM public.create_new_quote_notifications(block_id);
 END;
 $$;
 

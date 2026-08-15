@@ -12,7 +12,7 @@ export default function Header({ user, onLogout }) {
       <nav>
         {user ? (
           <>
-            <NotificationBell userId={user.id} />
+            <NotificationBell user={user} />
             <span className="nav-user">{user.username}</span>
             <button type="button" className="nav-btn" onClick={onLogout}>
               Log out

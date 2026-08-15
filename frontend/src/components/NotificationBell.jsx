@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell } from 'lucide-react'
 import { api, supabase } from '../api/client'
 
 function formatRelativeTime(iso) {
@@ -18,13 +17,51 @@ function formatRelativeTime(iso) {
   return new Date(iso).toLocaleDateString()
 }
 
-export default function NotificationBell({ userId }) {
+function BellIcon() {
+  return (
+    <svg
+      className="notification-bell-icon"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+      <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+    </svg>
+  )
+}
+
+export default function NotificationBell({ user }) {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [userId, setUserId] = useState(user?.id ?? null)
   const panelRef = useRef(null)
   const buttonRef = useRef(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      setUserId(user.id)
+      return undefined
+    }
+
+    let active = true
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!active || error) return
+      setUserId(data.user?.id ?? null)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [user?.id])
 
   const refresh = useCallback(async (isActive = () => true) => {
     if (!userId || !isActive()) return
@@ -119,7 +156,7 @@ export default function NotificationBell({ userId }) {
     }
   }
 
-  if (!userId) return null
+  if (!user) return null
 
   return (
     <div className="notification-bell">
@@ -132,7 +169,7 @@ export default function NotificationBell({ userId }) {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <Bell size={18} strokeWidth={2} aria-hidden="true" />
+        <BellIcon />
         {unreadCount > 0 && (
           <span className="notification-bell-badge" aria-hidden="true">
             {unreadCount > 99 ? '99+' : unreadCount}

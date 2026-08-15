@@ -41,6 +41,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .nav-user {
@@ -83,6 +84,7 @@
 
 .notification-bell {
   position: relative;
+  flex-shrink: 0;
 }
 
 .notification-bell-btn {
@@ -92,18 +94,25 @@
   justify-content: center;
   width: 2.2rem;
   height: 2.2rem;
-  border: 1px solid rgba(255, 253, 249, 0.18);
+  padding: 0;
+  border: none;
   border-radius: 8px;
   background: transparent;
-  color: rgba(255, 253, 249, 0.9);
+  color: rgba(255, 253, 249, 0.88);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s;
+}
+
+.notification-bell-icon {
+  display: block;
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 .notification-bell-btn:hover,
 .notification-bell-btn.is-open {
   background: rgba(255, 253, 249, 0.1);
-  border-color: rgba(255, 253, 249, 0.35);
+  color: #fffdf9;
 }
 
 .notification-bell-badge {
