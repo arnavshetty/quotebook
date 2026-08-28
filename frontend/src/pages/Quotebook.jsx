@@ -189,8 +189,20 @@ export default function Quotebook({ user }) {
 
   if (loading) return <p className="page-message">Loading quotebook…</p>
 
+  if (!quotebook) {
+    return (
+      <div className="quotebook-page">
+        <Link to="/" className="back-link">← All quotebooks</Link>
+        <p className="error quotebook-page-error">
+          {error || 'Quotebook not found or access denied.'}
+        </p>
+      </div>
+    )
+  }
+
   const showCollaborators = canManageCollaborators(quotebook) && viewMode === 'edit'
-  const showSidebar = speakerLeaderboard.length > 0 || showCollaborators || canLeave
+  const showSidebar =
+    speakerLeaderboard.length > 0 || showCollaborators || canLeave || Boolean(quotebook)
 
   return (
     <div className={`quotebook-page${viewMode === 'book' ? ' quotebook-page--read' : ''}`}>
@@ -298,7 +310,7 @@ export default function Quotebook({ user }) {
           {viewMode === 'book' ? (
             <QuotebookBookView
               quotes={quotes}
-              quotebookTitle={quotebook.title}
+              quotebookTitle={quotebook?.title ?? 'Quotebook'}
               bookSort={bookSort}
             />
           ) : (
