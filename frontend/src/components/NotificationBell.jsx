@@ -1,21 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { api, supabase } from '../api/client'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import useMediaQuery from '../hooks/useMediaQuery'
+import useNotifications from '../hooks/useNotifications'
+import NotificationList from './NotificationList'
 
-function formatRelativeTime(iso) {
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes}m ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-
-  return new Date(iso).toLocaleDateString()
-}
+const MOBILE_NOTIFICATIONS_QUERY = '(max-width: 900px)'
 
 function BellIcon() {
   return (
@@ -37,88 +26,38 @@ function BellIcon() {
   )
 }
 
+function NotificationBadge({ unreadCount }) {
+  if (unreadCount <= 0) return null
+
+  return (
+    <span className="notification-bell-badge" aria-hidden="true">
+      {unreadCount > 99 ? '99+' : unreadCount}
+    </span>
+  )
+}
+
 export default function NotificationBell({ user }) {
   const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [userId, setUserId] = useState(user?.id ?? null)
+  const isMobile = useMediaQuery(MOBILE_NOTIFICATIONS_QUERY)
+  const location = useLocation()
   const panelRef = useRef(null)
   const buttonRef = useRef(null)
 
-  useEffect(() => {
-    if (user?.id) {
-      setUserId(user.id)
-      return undefined
-    }
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    setError,
+    markNotificationRead,
+    markAllRead,
+  } = useNotifications(user)
 
-    let active = true
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!active || error) return
-      setUserId(data.user?.id ?? null)
-    })
-
-    return () => {
-      active = false
-    }
-  }, [user?.id])
-
-  const refresh = useCallback(async (isActive = () => true) => {
-    if (!userId || !isActive()) return
-
-    try {
-      const [{ notifications: items }, { count }] = await Promise.all([
-        api.getNotifications(),
-        api.getUnreadNotificationCount(),
-      ])
-
-      if (!isActive()) return
-
-      setNotifications(items)
-      setUnreadCount(count)
-    } catch {
-      if (!isActive()) return
-      setNotifications([])
-      setUnreadCount(0)
-    }
-  }, [userId])
+  const isNotificationsPage = location.pathname === '/notifications'
+  const ariaLabel = unreadCount ? `${unreadCount} unread notifications` : 'Notifications'
 
   useEffect(() => {
-    if (!userId) return undefined
-
-    let active = true
-    const isActive = () => active
-
-    setLoading(true)
-    refresh(isActive).finally(() => {
-      if (isActive()) setLoading(false)
-    })
-
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          refresh(isActive)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      active = false
-      supabase.removeChannel(channel)
-    }
-  }, [userId, refresh])
-
-  useEffect(() => {
-    if (!open) return undefined
+    if (!open || isMobile) return undefined
 
     const handlePointerDown = (event) => {
       const target = event.target
@@ -129,7 +68,7 @@ export default function NotificationBell({ user }) {
 
     document.addEventListener('pointerdown', handlePointerDown)
     return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [open])
+  }, [open, isMobile])
 
   const handleToggle = () => {
     setError('')
@@ -137,30 +76,27 @@ export default function NotificationBell({ user }) {
   }
 
   const handleNotificationClick = async (notification) => {
-    if (!notification.read_at) {
-      try {
-        await api.markNotificationRead(notification.id)
-        setError('')
-        await refresh()
-      } catch (err) {
-        setError(err.message || 'Could not mark notification as read.')
-      }
-    }
-
+    await markNotificationRead(notification)
     setOpen(false)
   }
 
-  const handleMarkAllRead = async () => {
-    try {
-      await api.markAllNotificationsRead()
-      setError('')
-      await refresh()
-    } catch (err) {
-      setError(err.message || 'Could not mark all notifications as read.')
-    }
-  }
-
   if (!user) return null
+
+  if (isMobile) {
+    return (
+      <div className="notification-bell">
+        <Link
+          to="/notifications"
+          className={`notification-bell-btn${isNotificationsPage ? ' is-open' : ''}`}
+          aria-label={ariaLabel}
+          aria-current={isNotificationsPage ? 'page' : undefined}
+        >
+          <BellIcon />
+          <NotificationBadge unreadCount={unreadCount} />
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="notification-bell">
@@ -169,62 +105,24 @@ export default function NotificationBell({ user }) {
         type="button"
         className={`notification-bell-btn${open ? ' is-open' : ''}`}
         onClick={handleToggle}
-        aria-label={unreadCount ? `${unreadCount} unread notifications` : 'Notifications'}
+        aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="true"
       >
         <BellIcon />
-        {unreadCount > 0 && (
-          <span className="notification-bell-badge" aria-hidden="true">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
+        <NotificationBadge unreadCount={unreadCount} />
       </button>
 
       {open && (
         <div ref={panelRef} className="notification-panel" role="dialog" aria-label="Notifications">
-          <div className="notification-panel-header">
-            <h2>Notifications</h2>
-            {unreadCount > 0 && (
-              <button type="button" className="notification-mark-all" onClick={handleMarkAllRead}>
-                Mark all read
-              </button>
-            )}
-          </div>
-
-          {error && <p className="error notification-panel-error">{error}</p>}
-
-          {loading ? (
-            <p className="notification-panel-empty">Loading…</p>
-          ) : notifications.length === 0 ? (
-            <p className="notification-panel-empty">No notifications yet.</p>
-          ) : (
-            <ul className="notification-list">
-              {notifications.map((notification) => {
-                const isUnread = !notification.read_at
-
-                return (
-                  <li key={notification.id}>
-                    <Link
-                      to={`/quotebook/${notification.quotebook_id}`}
-                      className={`notification-item${isUnread ? ' notification-item--unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <span className="notification-item-title">
-                        {notification.actor_name}
-                        {' added a quote to '}
-                        <strong>{notification.quotebook_title}</strong>
-                      </span>
-                      <span className="notification-item-preview">“{notification.preview_text}”</span>
-                      <span className="notification-item-time">
-                        {formatRelativeTime(notification.created_at)}
-                      </span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          <NotificationList
+            notifications={notifications}
+            loading={loading}
+            error={error}
+            unreadCount={unreadCount}
+            onMarkAllRead={markAllRead}
+            onNotificationClick={handleNotificationClick}
+          />
         </div>
       )}
     </div>

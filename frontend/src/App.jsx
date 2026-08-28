@@ -5,6 +5,7 @@ import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
 import ForgotPassword from './pages/ForgotPassword'
 import Login from './pages/Login'
+import Notifications from './pages/Notifications'
 import Quotebook from './pages/Quotebook'
 import ResetPassword from './pages/ResetPassword'
 import Signup from './pages/Signup'
@@ -106,6 +107,14 @@ export default function App() {
             element={
               <ProtectedRoute user={user}>
                 <Quotebook user={user} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute user={user}>
+                <Notifications user={user} />
               </ProtectedRoute>
             }
           />
