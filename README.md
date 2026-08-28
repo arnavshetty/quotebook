@@ -22,17 +22,16 @@ npm install
 
 2. **Apply Supabase migrations**
 
-If you use the Supabase CLI and have linked your project:
+Link your Supabase project (once), then push the migrations in `supabase/migrations/` in order:
 
 ```bash
 cd quotebook
+supabase link --project-ref your-project-ref
 export SUPABASE_DB_PASSWORD='your-db-password'
 supabase db push
 ```
 
-Or run `supabase/migrations/20260610000000_initial_schema.sql` from the Supabase SQL editor on a **new** project.
-
-**Note:** If your database already ran the older incremental migrations, do not re-apply the squashed file — use `supabase db push` only on fresh projects or reset your remote DB first.
+For local Supabase: run `supabase start`, then `supabase db reset` to apply all migrations to a fresh local database.
 
 3. **Configure environment**
 
@@ -62,7 +61,7 @@ If email confirmation is enabled in Supabase, new users must confirm their email
 
 ### 1. Database
 
-Apply the migration in `supabase/migrations/` to your remote project (fresh DBs only if squashed):
+Apply the migrations in `supabase/migrations/` to your remote project:
 
 ```bash
 supabase link --project-ref your-project-ref
@@ -102,7 +101,9 @@ supabase/
 
 - Multi-line dialogue logging with fuzzy dates
 - Quotebooks with sharing (viewer / contributor / admin roles)
+- Pending email invites for users who have not signed up yet
 - Contributors can edit any quote in a shared quotebook
 - Admins can manage collaborators
-- Global search, read-mode export, book view
+- In-app notifications when someone adds a quote to a shared book
+- Global search, read-mode export (text, Markdown, JSON, PDF, print), book view
 - Supabase Auth + RLS for security
