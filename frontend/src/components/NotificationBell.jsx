@@ -87,6 +87,7 @@ export default function NotificationBell({ user }) {
       <div className="notification-bell">
         <Link
           to="/notifications"
+          state={{ from: `${location.pathname}${location.search}` }}
           className={`notification-bell-btn${isNotificationsPage ? ' is-open' : ''}`}
           aria-label={ariaLabel}
           aria-current={isNotificationsPage ? 'page' : undefined}
