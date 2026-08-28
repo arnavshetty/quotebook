@@ -18,17 +18,20 @@
   font-size: 1.85rem;
   font-weight: 600;
   line-height: 1.2;
+  color: var(--ink);
 }
 
 .notifications-back {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  flex-shrink: 0;
   border: none;
   background: none;
   color: var(--ink-muted);
   font-size: 0.9rem;
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
   padding: 0.35rem 0.5rem 0.35rem 0;
   margin-left: -0.5rem;

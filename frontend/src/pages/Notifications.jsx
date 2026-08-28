@@ -1,10 +1,18 @@
 import { ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import NotificationList from '../components/NotificationList'
 import useNotifications from '../hooks/useNotifications'
 
+function backTarget(location) {
+  const from = location.state?.from
+  if (typeof from === 'string' && from.startsWith('/') && from !== '/notifications') {
+    return from
+  }
+  return '/'
+}
+
 export default function Notifications({ user }) {
-  const navigate = useNavigate()
+  const location = useLocation()
   const {
     notifications,
     unreadCount,
@@ -17,21 +25,16 @@ export default function Notifications({ user }) {
   return (
     <div className="notifications-page">
       <header className="notifications-page-header">
-        <button
-          type="button"
-          className="notifications-back"
-          onClick={() => navigate(-1)}
-          aria-label="Go back"
-        >
+        <Link to={backTarget(location)} className="notifications-back">
           <ArrowLeft size={20} strokeWidth={2.25} aria-hidden="true" />
           <span>Back</span>
-        </button>
+        </Link>
         <h1>Notifications</h1>
       </header>
 
       <div className="notifications-page-content">
         <NotificationList
-          notifications={notifications}
+          notifications={notifications ?? []}
           loading={loading}
           error={error}
           unreadCount={unreadCount}
