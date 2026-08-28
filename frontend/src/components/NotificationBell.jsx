@@ -42,6 +42,7 @@ export default function NotificationBell({ user }) {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [userId, setUserId] = useState(user?.id ?? null)
   const panelRef = useRef(null)
   const buttonRef = useRef(null)
@@ -131,6 +132,7 @@ export default function NotificationBell({ user }) {
   }, [open])
 
   const handleToggle = () => {
+    setError('')
     setOpen((prev) => !prev)
   }
 
@@ -138,9 +140,10 @@ export default function NotificationBell({ user }) {
     if (!notification.read_at) {
       try {
         await api.markNotificationRead(notification.id)
+        setError('')
         await refresh()
-      } catch {
-        // Still navigate if marking read fails.
+      } catch (err) {
+        setError(err.message || 'Could not mark notification as read.')
       }
     }
 
@@ -150,9 +153,10 @@ export default function NotificationBell({ user }) {
   const handleMarkAllRead = async () => {
     try {
       await api.markAllNotificationsRead()
+      setError('')
       await refresh()
-    } catch {
-      // Ignore for now; list stays as-is.
+    } catch (err) {
+      setError(err.message || 'Could not mark all notifications as read.')
     }
   }
 
@@ -187,6 +191,8 @@ export default function NotificationBell({ user }) {
               </button>
             )}
           </div>
+
+          {error && <p className="error notification-panel-error">{error}</p>}
 
           {loading ? (
             <p className="notification-panel-empty">Loading…</p>
