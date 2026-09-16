@@ -20,18 +20,11 @@ cd quotebook/frontend
 npm install
 ```
 
-2. **Apply Supabase migrations**
+2. **Database**
 
-Link your Supabase project (once), then push the migrations in `supabase/migrations/` in order:
+Migrations in `supabase/migrations/` are applied to the hosted project automatically when they land on `main`. Do not also run `supabase db push` for those same files, or you will get a duplicate-key error on `schema_migrations`.
 
-```bash
-cd quotebook
-supabase link --project-ref your-project-ref
-export SUPABASE_DB_PASSWORD='your-db-password'
-supabase db push
-```
-
-For local Supabase: run `supabase start`, then `supabase db reset` to apply all migrations to a fresh local database.
+For a local database: `supabase start`, then `supabase db reset`.
 
 3. **Configure environment**
 
@@ -61,13 +54,7 @@ If email confirmation is enabled in Supabase, new users must confirm their email
 
 ### 1. Database
 
-Apply the migrations in `supabase/migrations/` to your remote project:
-
-```bash
-supabase link --project-ref your-project-ref
-export SUPABASE_DB_PASSWORD='your-db-password'
-supabase db push
-```
+Push the branch to `main`. The GitHub integration applies new files in `supabase/migrations/` to the hosted project. Use `supabase db push` only if you need to apply migrations without going through `main`.
 
 ### 2. Vercel (frontend)
 
